@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="spaccommon"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\;CMake Files\..\..\..\..\..\..\home\;CMake Files\..\..\..\..\..\..\home\meyer\;CMake Files\..\..\..\..\..\..\home\meyer\dev\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\scripts\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\scripts\buildsystems\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\entt\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\unofficial-box2d\;CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\;CMake Files\src\;CMake Files\src\Common\;CMake Files\src\Common\ECS\;CMake Files\src\Common\Net\;CMake Files\src\Server\;CMake Files\src\Server\ECS\;CMake Files\src\Server\ECS\Components\;CMake Files\src\Server\ECS\Systems\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug/src/Common"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j12 -f &quot;/mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug/src/Common/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j12 -f &quot;/mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug/src/Common/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j12 -f &quot;/mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug/src/Common/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j12 -f &quot;/mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug/src/Common/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/scripts/buildsystems/vcpkg.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\scripts\buildsystems\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/entt/EnTTConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\entt\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/entt/EnTTConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\entt\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/entt/EnTTTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\entt\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/unofficial-box2d/unofficial-box2d-config-debug.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\unofficial-box2d\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/unofficial-box2d/unofficial-box2d-config-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\unofficial-box2d\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/unofficial-box2d/unofficial-box2d-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\unofficial-box2d\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatbuffersConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatbuffersConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatbuffersTargets-debug.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatbuffersTargets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatbuffersTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatcTargets-debug.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatcTargets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/../../../../../../home/meyer/dev/vcpkg/installed/x64-linux/share/flatbuffers/FlatcTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\..\..\home\meyer\dev\vcpkg\installed\x64-linux\share\flatbuffers\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Common/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Common\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Common/ECS/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Common\ECS\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Common/Net/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Common\Net\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Server/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Server\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Server/ECS/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Server\ECS\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Server/ECS/Components/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Server\ECS\Components\"/>
+		</Unit>
+		<Unit filename="/mnt/c/Users/meyer/CLionProjects/spac2/src/Server/ECS/Systems/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\Server\ECS\Systems\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

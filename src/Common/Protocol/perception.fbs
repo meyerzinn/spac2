@@ -1,0 +1,46 @@
+namespace spac.net;
+
+struct vec2f {
+    x:float32;
+    y:float32;
+}
+
+table ShipMetadata {
+    id:uint32;
+    name:string;
+}
+
+table ShipDelta {
+    id:uint32;
+    position:vec2f;
+    velocity:vec2f;
+    angle:float32;
+    angularVelocity:float32;
+    health:ubyte; // maps to (0,maxHealth]
+    /// FLAGS (LSB to MSB):
+    /// First three bits are booster status (0 to 7 indicating the relative burn mass (proportional to thrust))
+    /// Next three bits are turning status (0 to 3, LSB is direction, where 1=positive radial direction)
+    /// Next bit is shield status (0x0 = disengaged, 0x1 = engaged).
+    flags:ubyte;
+}
+
+table ProjectileMetadata {
+    id:uint32;
+    owner:uint32;
+}
+
+table ProjectileDelta {
+    id:int32;
+    position:vec2f;
+    velocity:vec2f;
+}
+
+table Perception {
+    timestamp:int64;
+    fuel:ubyte;
+    removed:[uint32];
+    shipMetas:[ShipMetadata];
+    projectileMetas:[ProjectileMetadata];
+    shipDeltas:[ShipDelta];
+    projectileDeltas:[ProjectileDelta];
+}

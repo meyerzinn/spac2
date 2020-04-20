@@ -1,0 +1,11 @@
+include "perception.fbs";
+
+namespace spac.net;
+
+union Message { Perception }
+
+table Packet {
+    message:Message;
+}
+
+root_type Packet;

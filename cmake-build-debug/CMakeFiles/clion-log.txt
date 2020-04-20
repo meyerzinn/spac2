@@ -1,0 +1,4 @@
+/usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=/home/meyer/dev/vcpkg/scripts/buildsystems/vcpkg.cmake -G "CodeBlocks - Unix Makefiles" /mnt/c/Users/meyer/CLionProjects/spac2
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /mnt/c/Users/meyer/CLionProjects/spac2/cmake-build-debug
