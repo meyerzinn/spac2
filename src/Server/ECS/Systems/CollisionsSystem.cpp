@@ -7,11 +7,11 @@ constexpr int32_t positionIterations = 3;
 
 namespace spac::server::system {
     void CollisionsSystem::update() {
-        world->Step(FIXED_SIMULATION_DURATION, velocityIterations, positionIterations);
+        mWorld.Step(FIXED_SIMULATION_DURATION, velocityIterations, positionIterations);
     }
 
-    CollisionsSystem::CollisionsSystem(entt::registry &registry, b2World *world) : System(registry), world(world) {
-        world->SetContactListener(this);
+    CollisionsSystem::CollisionsSystem(entt::registry &registry, b2World &world) : System(registry), mWorld(world) {
+        world.SetContactListener(this);
     }
 
     void CollisionsSystem::PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) {

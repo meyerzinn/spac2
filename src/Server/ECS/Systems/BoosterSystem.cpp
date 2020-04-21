@@ -11,8 +11,10 @@ namespace spac::server::system {
             auto &booster = entities.get<component::Booster>(entity);
             auto physics = entities.get<component::PhysicsBody>(entity);
             auto &fuel = entities.get<component::Fuel>(entity);
+            auto dotProduct = b2Dot(physics.body->GetLinearVelocity(),
+                                    b2Vec2(cos(physics.body->GetAngle()), sin(physics.body->GetAngle())));
             if (controller.booster <= 0 || fuel.stored <= 0 ||
-                physics.body->GetLinearVelocity().Length() > booster.maxLinearVelocity) {
+                (physics.body->GetLinearVelocity().Length() > booster.maxLinearVelocity && dotProduct >= 0)) {
                 booster.lastBurnedMass = 0;
                 continue;
             }

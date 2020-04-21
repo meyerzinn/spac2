@@ -12,17 +12,24 @@ add_subdirectory(ECS)
 find_package(EnTT CONFIG REQUIRED)
 find_package(unofficial-box2d CONFIG REQUIRED)
 find_package(Flatbuffers CONFIG REQUIRED)
+find_package(Boost 1.72 REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # uwebsockets
 find_path(USOCKETS_INCLUDE_DIR libusockets.h)
 find_path(UWEBSOCKETS_INCLUDE_DIR uwebsockets/App.h)
+find_library(USOCKETS_LIBRARY libuSockets.a)
 
 target_include_directories(spacserver PRIVATE
         ${USOCKETS_INCLUDE_DIR}
-        ${UWEBSOCKETS_INCLUDE_DIR})
+        ${UWEBSOCKETS_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIR})
 
 target_link_libraries(spacserver PRIVATE
         spac::common
         EnTT::EnTT
         unofficial::box2d::box2d
-        flatbuffers::flatbuffers)
+        flatbuffers::flatbuffers
+        ${USOCKETS_LIBRARY}
+        ZLIB::ZLIB
+        ${Boost_LIBRARIES})

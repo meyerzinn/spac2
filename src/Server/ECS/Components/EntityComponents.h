@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <entt/entity/fwd.hpp>
 
 namespace spac::server::component {
@@ -17,6 +18,10 @@ namespace spac::server::component {
 
     struct Lifetime {
         float lifetime;
+    };
+
+    struct Owner {
+        std::vector<entt::entity> owned;
     };
 
     struct Owned {

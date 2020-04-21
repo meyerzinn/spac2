@@ -13,6 +13,9 @@ namespace spac::server::component {
         std::unordered_set<entt::entity> knownEntities;
     };
 
+    template class NetClient<true>;
+    template class NetClient<false>;
+
 }
 
 

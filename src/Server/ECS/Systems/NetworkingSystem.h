@@ -7,19 +7,29 @@
 #include <entt/entt.hpp>
 #include <unordered_set>
 #include <set>
+#include <boost/lockfree/queue.hpp>
+#include <TaskQueue.h>
+#include <uwebsockets/App.h>
+#include <chrono>
+
+using namespace std::chrono;
 
 namespace spac::server::system {
     template<bool SSL>
     class NetworkingSystem : public spac::System {
     public:
-        using System::System;
-
-        explicit NetworkingSystem(b2World *world);
+        NetworkingSystem(entt::registry &registry, b2World &world);
 
         void update() override;
 
+        void listen(int port, uWS::TemplatedApp<SSL> app);
+
     private:
-        b2World *mWorld;
+        TaskQueue mTaskQueue = TaskQueue(1024);
+        b2World &mWorld;
+        std::chrono::time_point<std::chrono::high_resolution_clock> lastPerception;
+
+        static void onNetClientComponentDestroyed(NetworkingSystem *ns, entt::registry &registry, entt::entity entity);
 
         class NetQueryCallback : public b2QueryCallback {
         public:
@@ -30,5 +40,4 @@ namespace spac::server::system {
         };
     };
 }
-
 

@@ -7,9 +7,7 @@ namespace spac::server::system {
 
     class CollisionsSystem : public spac::System, public b2ContactListener {
     public:
-        using System::System;
-
-        CollisionsSystem(entt::registry &registry, b2World *world);
+        CollisionsSystem(entt::registry &registry, b2World &world);
 
         void update() override;
 
@@ -19,7 +17,7 @@ namespace spac::server::system {
         void PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) override;
 
     private:
-        b2World *world;
+        b2World &mWorld;
 
         void handleCollision(entt::entity damager, entt::entity target, float impulse);
     };

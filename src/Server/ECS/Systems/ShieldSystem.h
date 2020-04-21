@@ -1,8 +1,13 @@
 #pragma once
 
+#include "System.h"
 
-class ShieldSystem {
+namespace spac::server::system {
+    class ShieldSystem : public spac::System {
+        using System::System;
 
-};
+        void update() override;
+    };
+}
 
 
