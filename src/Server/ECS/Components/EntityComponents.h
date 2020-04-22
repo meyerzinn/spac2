@@ -1,30 +1,31 @@
 #pragma once
 
-#include <vector>
+#include <chrono>
 #include <entt/entity/fwd.hpp>
+#include <vector>
 
 namespace spac::server::component {
-    struct Health {
-        float current;
-        float max;
-    };
+struct Health {
+  float current;
+  float max;
+};
 
-    struct DealsDamage {
-        float scalar = 0.5;
-    };
+struct DealsDamage {
+  float scalar = 0.5;
+};
 
-    struct TaggedToDestroy {
-    };
+struct TaggedToDestroy {};
 
-    struct Lifetime {
-        float lifetime;
-    };
+struct Lifetime {
+  float lifetime;
+};
 
-    struct Owner {
-        std::vector<entt::entity> owned;
-    };
+struct Owner {
+  std::vector<entt::entity> owned;
+};
 
-    struct Owned {
-        entt::entity owner;
-    };
-}
+struct Owned {
+  entt::entity owner;
+};
+
+}  // namespace spac::server::component

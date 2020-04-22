@@ -1,0 +1,6 @@
+namespace spac.net;
+
+table Death {
+    /// time alive in milliseconds
+    timeAlive:int64;
+}

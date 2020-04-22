@@ -1,0 +1,5 @@
+namespace spac::net;
+
+table Respawn {
+    name:string;
+}

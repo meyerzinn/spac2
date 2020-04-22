@@ -1,8 +1,9 @@
 include "perception.fbs";
+include "death.fbs";
 
 namespace spac.net;
 
-union Message { Perception }
+union Message { Perception, Death }
 
 table Packet {
     message:Message;

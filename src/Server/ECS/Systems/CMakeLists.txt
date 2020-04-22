@@ -13,4 +13,6 @@ target_sources(spacserver
         ${CMAKE_CURRENT_LIST_DIR}/ShieldSystem.h
         ${CMAKE_CURRENT_LIST_DIR}/ShieldSystem.cpp
         ${CMAKE_CURRENT_LIST_DIR}/NetworkingSystem.h
-        ${CMAKE_CURRENT_LIST_DIR}/NetworkingSystem.cpp)
+        ${CMAKE_CURRENT_LIST_DIR}/NetworkingSystem.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/PerceptionsSystem.h
+        ${CMAKE_CURRENT_LIST_DIR}/PerceptionsSystem.cpp)

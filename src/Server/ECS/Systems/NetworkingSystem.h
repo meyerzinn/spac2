@@ -1,43 +1,47 @@
 #pragma once
 
-#include "System.h"
-#include "Constants.h"
-#include "CollisionFlags.h"
-#include <box2d/box2d.h>
-#include <entt/entt.hpp>
-#include <unordered_set>
-#include <set>
-#include <boost/lockfree/queue.hpp>
 #include <TaskQueue.h>
+#include <box2d/box2d.h>
 #include <uwebsockets/App.h>
+#include <uwebsockets/Loop.h>
+#include <uwebsockets/LoopData.h>
+#include <atomic>
+#include <boost/lockfree/queue.hpp>
 #include <chrono>
+#include <entt/entt.hpp>
+#include <set>
+#include <unordered_set>
+#include "CollisionFlags.h"
+#include "Constants.h"
+#include "System.h"
+#include "packet_generated.h"
 
 using namespace std::chrono;
 
 namespace spac::server::system {
-    template<bool SSL>
-    class NetworkingSystem : public spac::System {
-    public:
-        NetworkingSystem(entt::registry &registry, b2World &world);
+template <bool SSL>
+class NetworkingSystem : public spac::System {
+ public:
+  NetworkingSystem(entt::registry &registry, b2World &world, uWS::Loop *loop);
 
-        void update() override;
+  void update() override;
 
-        void listen(int port, uWS::TemplatedApp<SSL> app);
+  void listen(int port, uWS::TemplatedApp<SSL> app);
 
-    private:
-        TaskQueue mTaskQueue = TaskQueue(1024);
-        b2World &mWorld;
-        std::chrono::time_point<std::chrono::high_resolution_clock> lastPerception;
+ private:
+  using WebSocket = uWS::WebSocket<SSL, true>;
+  entt::observer mDeathObserver;
+  TaskQueue mTaskQueue = TaskQueue(1024);
+  b2World &mWorld;
+  uWS::Loop *mLoop;
 
-        static void onNetClientComponentDestroyed(NetworkingSystem *ns, entt::registry &registry, entt::entity entity);
+  void onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode);
+  void onOpen(WebSocket *ws, uWS::HttpRequest *req);
+  void onClose(WebSocket *ws, int code, std::string_view message);
 
-        class NetQueryCallback : public b2QueryCallback {
-        public:
-            std::set<entt::entity> foundShips;
-            std::set<entt::entity> foundProjectiles;
-
-            bool ReportFixture(b2Fixture *fixture) override;
-        };
-    };
-}
-
+  struct SocketData {
+    entt::entity id = entt::null;
+    std::shared_ptr<std::atomic<bool>> closed;
+  };
+};
+}  // namespace spac::server::system

@@ -8,6 +8,7 @@
 #include "NetworkingSystem.h"
 #include "CollisionsSystem.h"
 #include "DestructionSystem.h"
+#include "PerceptionsSystem.h"
 
 using namespace spac::server;
 
@@ -20,7 +21,8 @@ int main() {
 
     auto lifetime = system::LifetimeSystem(registry);
     auto collisions = system::CollisionsSystem(registry, world);
-    auto networking = system::NetworkingSystem<true>(registry, world);
+    auto networking = system::NetworkingSystem<true>(registry, world, uWS::Loop::get());
+    auto perceptions = system::PerceptionsSystem<true>(registry, world, uWS::Loop::get());
     auto destruction = system::DestructionSystem(registry, world);
 
     networking.listen(9001, uWS::SSLApp(

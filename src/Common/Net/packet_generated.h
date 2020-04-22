@@ -12,43 +12,55 @@ namespace net {
 struct vec2f;
 
 struct ShipMetadata;
+struct ShipMetadataBuilder;
 
 struct ShipDelta;
+struct ShipDeltaBuilder;
 
 struct ProjectileMetadata;
+struct ProjectileMetadataBuilder;
 
 struct ProjectileDelta;
+struct ProjectileDeltaBuilder;
 
 struct Perception;
+struct PerceptionBuilder;
+
+struct Death;
+struct DeathBuilder;
 
 struct Packet;
+struct PacketBuilder;
 
 enum Message {
   Message_NONE = 0,
   Message_Perception = 1,
+  Message_Death = 2,
   Message_MIN = Message_NONE,
-  Message_MAX = Message_Perception
+  Message_MAX = Message_Death
 };
 
-inline const Message (&EnumValuesMessage())[2] {
+inline const Message (&EnumValuesMessage())[3] {
   static const Message values[] = {
     Message_NONE,
-    Message_Perception
+    Message_Perception,
+    Message_Death
   };
   return values;
 }
 
 inline const char * const *EnumNamesMessage() {
-  static const char * const names[] = {
+  static const char * const names[4] = {
     "NONE",
     "Perception",
+    "Death",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameMessage(Message e) {
-  if (e < Message_NONE || e > Message_Perception) return "";
+  if (flatbuffers::IsOutRange(e, Message_NONE, Message_Death)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesMessage()[index];
 }
@@ -57,8 +69,12 @@ template<typename T> struct MessageTraits {
   static const Message enum_value = Message_NONE;
 };
 
-template<> struct MessageTraits<Perception> {
+template<> struct MessageTraits<spac::net::Perception> {
   static const Message enum_value = Message_Perception;
+};
+
+template<> struct MessageTraits<spac::net::Death> {
+  static const Message enum_value = Message_Death;
 };
 
 bool VerifyMessage(flatbuffers::Verifier &verifier, const void *obj, Message type);
@@ -87,6 +103,7 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec2f FLATBUFFERS_FINAL_CLASS {
 FLATBUFFERS_STRUCT_END(vec2f, 8);
 
 struct ShipMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ShipMetadataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_NAME = 6
@@ -107,6 +124,7 @@ struct ShipMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct ShipMetadataBuilder {
+  typedef ShipMetadata Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(uint32_t id) {
@@ -119,7 +137,6 @@ struct ShipMetadataBuilder {
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ShipMetadataBuilder &operator=(const ShipMetadataBuilder &);
   flatbuffers::Offset<ShipMetadata> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<ShipMetadata>(end);
@@ -149,6 +166,7 @@ inline flatbuffers::Offset<ShipMetadata> CreateShipMetadataDirect(
 }
 
 struct ShipDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ShipDeltaBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_POSITION = 6,
@@ -161,11 +179,11 @@ struct ShipDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   uint32_t id() const {
     return GetField<uint32_t>(VT_ID, 0);
   }
-  const vec2f *position() const {
-    return GetStruct<const vec2f *>(VT_POSITION);
+  const spac::net::vec2f *position() const {
+    return GetStruct<const spac::net::vec2f *>(VT_POSITION);
   }
-  const vec2f *velocity() const {
-    return GetStruct<const vec2f *>(VT_VELOCITY);
+  const spac::net::vec2f *velocity() const {
+    return GetStruct<const spac::net::vec2f *>(VT_VELOCITY);
   }
   float angle() const {
     return GetField<float>(VT_ANGLE, 0.0f);
@@ -186,8 +204,8 @@ struct ShipDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_ID) &&
-           VerifyField<vec2f>(verifier, VT_POSITION) &&
-           VerifyField<vec2f>(verifier, VT_VELOCITY) &&
+           VerifyField<spac::net::vec2f>(verifier, VT_POSITION) &&
+           VerifyField<spac::net::vec2f>(verifier, VT_VELOCITY) &&
            VerifyField<float>(verifier, VT_ANGLE) &&
            VerifyField<float>(verifier, VT_ANGULARVELOCITY) &&
            VerifyField<uint8_t>(verifier, VT_HEALTH) &&
@@ -197,15 +215,16 @@ struct ShipDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct ShipDeltaBuilder {
+  typedef ShipDelta Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(uint32_t id) {
     fbb_.AddElement<uint32_t>(ShipDelta::VT_ID, id, 0);
   }
-  void add_position(const vec2f *position) {
+  void add_position(const spac::net::vec2f *position) {
     fbb_.AddStruct(ShipDelta::VT_POSITION, position);
   }
-  void add_velocity(const vec2f *velocity) {
+  void add_velocity(const spac::net::vec2f *velocity) {
     fbb_.AddStruct(ShipDelta::VT_VELOCITY, velocity);
   }
   void add_angle(float angle) {
@@ -224,7 +243,6 @@ struct ShipDeltaBuilder {
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ShipDeltaBuilder &operator=(const ShipDeltaBuilder &);
   flatbuffers::Offset<ShipDelta> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<ShipDelta>(end);
@@ -235,8 +253,8 @@ struct ShipDeltaBuilder {
 inline flatbuffers::Offset<ShipDelta> CreateShipDelta(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t id = 0,
-    const vec2f *position = 0,
-    const vec2f *velocity = 0,
+    const spac::net::vec2f *position = 0,
+    const spac::net::vec2f *velocity = 0,
     float angle = 0.0f,
     float angularVelocity = 0.0f,
     uint8_t health = 0,
@@ -253,6 +271,7 @@ inline flatbuffers::Offset<ShipDelta> CreateShipDelta(
 }
 
 struct ProjectileMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ProjectileMetadataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_OWNER = 6
@@ -272,6 +291,7 @@ struct ProjectileMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct ProjectileMetadataBuilder {
+  typedef ProjectileMetadata Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(uint32_t id) {
@@ -284,7 +304,6 @@ struct ProjectileMetadataBuilder {
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ProjectileMetadataBuilder &operator=(const ProjectileMetadataBuilder &);
   flatbuffers::Offset<ProjectileMetadata> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<ProjectileMetadata>(end);
@@ -303,6 +322,7 @@ inline flatbuffers::Offset<ProjectileMetadata> CreateProjectileMetadata(
 }
 
 struct ProjectileDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ProjectileDeltaBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_POSITION = 6,
@@ -311,38 +331,38 @@ struct ProjectileDelta FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const vec2f *position() const {
-    return GetStruct<const vec2f *>(VT_POSITION);
+  const spac::net::vec2f *position() const {
+    return GetStruct<const spac::net::vec2f *>(VT_POSITION);
   }
-  const vec2f *velocity() const {
-    return GetStruct<const vec2f *>(VT_VELOCITY);
+  const spac::net::vec2f *velocity() const {
+    return GetStruct<const spac::net::vec2f *>(VT_VELOCITY);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
-           VerifyField<vec2f>(verifier, VT_POSITION) &&
-           VerifyField<vec2f>(verifier, VT_VELOCITY) &&
+           VerifyField<spac::net::vec2f>(verifier, VT_POSITION) &&
+           VerifyField<spac::net::vec2f>(verifier, VT_VELOCITY) &&
            verifier.EndTable();
   }
 };
 
 struct ProjectileDeltaBuilder {
+  typedef ProjectileDelta Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(int32_t id) {
     fbb_.AddElement<int32_t>(ProjectileDelta::VT_ID, id, 0);
   }
-  void add_position(const vec2f *position) {
+  void add_position(const spac::net::vec2f *position) {
     fbb_.AddStruct(ProjectileDelta::VT_POSITION, position);
   }
-  void add_velocity(const vec2f *velocity) {
+  void add_velocity(const spac::net::vec2f *velocity) {
     fbb_.AddStruct(ProjectileDelta::VT_VELOCITY, velocity);
   }
   explicit ProjectileDeltaBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ProjectileDeltaBuilder &operator=(const ProjectileDeltaBuilder &);
   flatbuffers::Offset<ProjectileDelta> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<ProjectileDelta>(end);
@@ -353,8 +373,8 @@ struct ProjectileDeltaBuilder {
 inline flatbuffers::Offset<ProjectileDelta> CreateProjectileDelta(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
-    const vec2f *position = 0,
-    const vec2f *velocity = 0) {
+    const spac::net::vec2f *position = 0,
+    const spac::net::vec2f *velocity = 0) {
   ProjectileDeltaBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_position(position);
@@ -363,6 +383,7 @@ inline flatbuffers::Offset<ProjectileDelta> CreateProjectileDelta(
 }
 
 struct Perception FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PerceptionBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TIMESTAMP = 4,
     VT_FUEL = 6,
@@ -375,28 +396,28 @@ struct Perception FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t timestamp() const {
     return GetField<int64_t>(VT_TIMESTAMP, 0);
   }
-  float fuel() const {
-    return GetField<float>(VT_FUEL, 0.0f);
+  uint8_t fuel() const {
+    return GetField<uint8_t>(VT_FUEL, 0);
   }
   const flatbuffers::Vector<uint32_t> *removed() const {
     return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_REMOVED);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<ShipMetadata>> *shipMetas() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<ShipMetadata>> *>(VT_SHIPMETAS);
+  const flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipMetadata>> *shipMetas() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipMetadata>> *>(VT_SHIPMETAS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<ProjectileMetadata>> *projectileMetas() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<ProjectileMetadata>> *>(VT_PROJECTILEMETAS);
+  const flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileMetadata>> *projectileMetas() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileMetadata>> *>(VT_PROJECTILEMETAS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<ShipDelta>> *shipDeltas() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<ShipDelta>> *>(VT_SHIPDELTAS);
+  const flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipDelta>> *shipDeltas() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipDelta>> *>(VT_SHIPDELTAS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<ProjectileDelta>> *projectileDeltas() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<ProjectileDelta>> *>(VT_PROJECTILEDELTAS);
+  const flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileDelta>> *projectileDeltas() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileDelta>> *>(VT_PROJECTILEDELTAS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_TIMESTAMP) &&
-           VerifyField<float>(verifier, VT_FUEL) &&
+           VerifyField<uint8_t>(verifier, VT_FUEL) &&
            VerifyOffset(verifier, VT_REMOVED) &&
            verifier.VerifyVector(removed()) &&
            VerifyOffset(verifier, VT_SHIPMETAS) &&
@@ -416,34 +437,34 @@ struct Perception FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct PerceptionBuilder {
+  typedef Perception Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_timestamp(int64_t timestamp) {
     fbb_.AddElement<int64_t>(Perception::VT_TIMESTAMP, timestamp, 0);
   }
-  void add_fuel(float fuel) {
-    fbb_.AddElement<float>(Perception::VT_FUEL, fuel, 0.0f);
+  void add_fuel(uint8_t fuel) {
+    fbb_.AddElement<uint8_t>(Perception::VT_FUEL, fuel, 0);
   }
   void add_removed(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> removed) {
     fbb_.AddOffset(Perception::VT_REMOVED, removed);
   }
-  void add_shipMetas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ShipMetadata>>> shipMetas) {
+  void add_shipMetas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipMetadata>>> shipMetas) {
     fbb_.AddOffset(Perception::VT_SHIPMETAS, shipMetas);
   }
-  void add_projectileMetas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ProjectileMetadata>>> projectileMetas) {
+  void add_projectileMetas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileMetadata>>> projectileMetas) {
     fbb_.AddOffset(Perception::VT_PROJECTILEMETAS, projectileMetas);
   }
-  void add_shipDeltas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ShipDelta>>> shipDeltas) {
+  void add_shipDeltas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipDelta>>> shipDeltas) {
     fbb_.AddOffset(Perception::VT_SHIPDELTAS, shipDeltas);
   }
-  void add_projectileDeltas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ProjectileDelta>>> projectileDeltas) {
+  void add_projectileDeltas(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileDelta>>> projectileDeltas) {
     fbb_.AddOffset(Perception::VT_PROJECTILEDELTAS, projectileDeltas);
   }
   explicit PerceptionBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  PerceptionBuilder &operator=(const PerceptionBuilder &);
   flatbuffers::Offset<Perception> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<Perception>(end);
@@ -454,12 +475,12 @@ struct PerceptionBuilder {
 inline flatbuffers::Offset<Perception> CreatePerception(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t timestamp = 0,
-    float fuel = 0.0f,
+    uint8_t fuel = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> removed = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ShipMetadata>>> shipMetas = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ProjectileMetadata>>> projectileMetas = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ShipDelta>>> shipDeltas = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ProjectileDelta>>> projectileDeltas = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipMetadata>>> shipMetas = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileMetadata>>> projectileMetas = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ShipDelta>>> shipDeltas = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spac::net::ProjectileDelta>>> projectileDeltas = 0) {
   PerceptionBuilder builder_(_fbb);
   builder_.add_timestamp(timestamp);
   builder_.add_projectileDeltas(projectileDeltas);
@@ -474,17 +495,17 @@ inline flatbuffers::Offset<Perception> CreatePerception(
 inline flatbuffers::Offset<Perception> CreatePerceptionDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t timestamp = 0,
-    float fuel = 0.0f,
+    uint8_t fuel = 0,
     const std::vector<uint32_t> *removed = nullptr,
-    const std::vector<flatbuffers::Offset<ShipMetadata>> *shipMetas = nullptr,
-    const std::vector<flatbuffers::Offset<ProjectileMetadata>> *projectileMetas = nullptr,
-    const std::vector<flatbuffers::Offset<ShipDelta>> *shipDeltas = nullptr,
-    const std::vector<flatbuffers::Offset<ProjectileDelta>> *projectileDeltas = nullptr) {
+    const std::vector<flatbuffers::Offset<spac::net::ShipMetadata>> *shipMetas = nullptr,
+    const std::vector<flatbuffers::Offset<spac::net::ProjectileMetadata>> *projectileMetas = nullptr,
+    const std::vector<flatbuffers::Offset<spac::net::ShipDelta>> *shipDeltas = nullptr,
+    const std::vector<flatbuffers::Offset<spac::net::ProjectileDelta>> *projectileDeltas = nullptr) {
   auto removed__ = removed ? _fbb.CreateVector<uint32_t>(*removed) : 0;
-  auto shipMetas__ = shipMetas ? _fbb.CreateVector<flatbuffers::Offset<ShipMetadata>>(*shipMetas) : 0;
-  auto projectileMetas__ = projectileMetas ? _fbb.CreateVector<flatbuffers::Offset<ProjectileMetadata>>(*projectileMetas) : 0;
-  auto shipDeltas__ = shipDeltas ? _fbb.CreateVector<flatbuffers::Offset<ShipDelta>>(*shipDeltas) : 0;
-  auto projectileDeltas__ = projectileDeltas ? _fbb.CreateVector<flatbuffers::Offset<ProjectileDelta>>(*projectileDeltas) : 0;
+  auto shipMetas__ = shipMetas ? _fbb.CreateVector<flatbuffers::Offset<spac::net::ShipMetadata>>(*shipMetas) : 0;
+  auto projectileMetas__ = projectileMetas ? _fbb.CreateVector<flatbuffers::Offset<spac::net::ProjectileMetadata>>(*projectileMetas) : 0;
+  auto shipDeltas__ = shipDeltas ? _fbb.CreateVector<flatbuffers::Offset<spac::net::ShipDelta>>(*shipDeltas) : 0;
+  auto projectileDeltas__ = projectileDeltas ? _fbb.CreateVector<flatbuffers::Offset<spac::net::ProjectileDelta>>(*projectileDeltas) : 0;
   return spac::net::CreatePerception(
       _fbb,
       timestamp,
@@ -496,20 +517,66 @@ inline flatbuffers::Offset<Perception> CreatePerceptionDirect(
       projectileDeltas__);
 }
 
+struct Death FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DeathBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TIMEALIVE = 4
+  };
+  /// time alive in milliseconds
+  int64_t timeAlive() const {
+    return GetField<int64_t>(VT_TIMEALIVE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_TIMEALIVE) &&
+           verifier.EndTable();
+  }
+};
+
+struct DeathBuilder {
+  typedef Death Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_timeAlive(int64_t timeAlive) {
+    fbb_.AddElement<int64_t>(Death::VT_TIMEALIVE, timeAlive, 0);
+  }
+  explicit DeathBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  flatbuffers::Offset<Death> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Death>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Death> CreateDeath(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t timeAlive = 0) {
+  DeathBuilder builder_(_fbb);
+  builder_.add_timeAlive(timeAlive);
+  return builder_.Finish();
+}
+
 struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_MESSAGE_TYPE = 4,
     VT_MESSAGE = 6
   };
-  Message message_type() const {
-    return static_cast<Message>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
+  spac::net::Message message_type() const {
+    return static_cast<spac::net::Message>(GetField<uint8_t>(VT_MESSAGE_TYPE, 0));
   }
   const void *message() const {
     return GetPointer<const void *>(VT_MESSAGE);
   }
   template<typename T> const T *message_as() const;
-  const Perception *message_as_Perception() const {
-    return message_type() == Message_Perception ? static_cast<const Perception *>(message()) : nullptr;
+  const spac::net::Perception *message_as_Perception() const {
+    return message_type() == spac::net::Message_Perception ? static_cast<const spac::net::Perception *>(message()) : nullptr;
+  }
+  const spac::net::Death *message_as_Death() const {
+    return message_type() == spac::net::Message_Death ? static_cast<const spac::net::Death *>(message()) : nullptr;
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -520,14 +587,19 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-template<> inline const Perception *Packet::message_as<Perception>() const {
+template<> inline const spac::net::Perception *Packet::message_as<spac::net::Perception>() const {
   return message_as_Perception();
 }
 
+template<> inline const spac::net::Death *Packet::message_as<spac::net::Death>() const {
+  return message_as_Death();
+}
+
 struct PacketBuilder {
+  typedef Packet Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_message_type(Message message_type) {
+  void add_message_type(spac::net::Message message_type) {
     fbb_.AddElement<uint8_t>(Packet::VT_MESSAGE_TYPE, static_cast<uint8_t>(message_type), 0);
   }
   void add_message(flatbuffers::Offset<void> message) {
@@ -537,7 +609,6 @@ struct PacketBuilder {
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  PacketBuilder &operator=(const PacketBuilder &);
   flatbuffers::Offset<Packet> Finish() {
     const auto end = fbb_.EndTable(start_);
     auto o = flatbuffers::Offset<Packet>(end);
@@ -547,7 +618,7 @@ struct PacketBuilder {
 
 inline flatbuffers::Offset<Packet> CreatePacket(
     flatbuffers::FlatBufferBuilder &_fbb,
-    Message message_type = Message_NONE,
+    spac::net::Message message_type = spac::net::Message_NONE,
     flatbuffers::Offset<void> message = 0) {
   PacketBuilder builder_(_fbb);
   builder_.add_message(message);
@@ -561,10 +632,14 @@ inline bool VerifyMessage(flatbuffers::Verifier &verifier, const void *obj, Mess
       return true;
     }
     case Message_Perception: {
-      auto ptr = reinterpret_cast<const Perception *>(obj);
+      auto ptr = reinterpret_cast<const spac::net::Perception *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    default: return false;
+    case Message_Death: {
+      auto ptr = reinterpret_cast<const spac::net::Death *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return true;
   }
 }
 
