@@ -1,13 +1,12 @@
 #pragma once
 
-#include <System.h>
+#include "System.h"
 
 namespace spac::server::system {
-    class BoosterSystem : public spac::System {
-        using System::System;
+class BoosterSystem : public spac::System {
+ public:
+  using spac::System::System;
 
-        void update() override;
-    };
-}
-
-
+  void update() override;
+};
+}  // namespace spac::server::system

@@ -9,6 +9,7 @@ target_include_directories(spacserver PRIVATE ${CMAKE_CURRENT_LIST_DIR}/Utilitie
 
 add_subdirectory(ECS)
 
+find_package(Threads REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(unofficial-box2d CONFIG REQUIRED)
 find_package(Flatbuffers CONFIG REQUIRED)
@@ -27,6 +28,7 @@ target_include_directories(spacserver PRIVATE
 
 target_link_libraries(spacserver PRIVATE
         spac::common
+        ${CMAKE_THREAD_LIBS_INIT}
         EnTT::EnTT
         unofficial::box2d::box2d
         flatbuffers::flatbuffers

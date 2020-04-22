@@ -37,7 +37,7 @@ void PerceptionsSystem<SSL>::update() {
       // use a separate builder for each client to avoid needing to copy memory
       flatbuffers::FlatBufferBuilder builder(1024);
 
-      auto &net = mRegistry.get<component::NetClient<SSL>>(client);
+      auto &net = clients.template get<component::NetClient<SSL>>(client);
 
       NetQueryCallback queryCallback;
       b2AABB viewableRegion;  // TODO make a separate, smaller region for

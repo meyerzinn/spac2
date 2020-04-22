@@ -37,6 +37,9 @@ class NetworkingSystem : public spac::System {
 
   void onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode);
   void onOpen(WebSocket *ws, uWS::HttpRequest *req);
+  void onDrain(WebSocket *ws);
+  void onPing(WebSocket *ws);
+  void onPong(WebSocket *ws);
   void onClose(WebSocket *ws, int code, std::string_view message);
 
   struct SocketData {

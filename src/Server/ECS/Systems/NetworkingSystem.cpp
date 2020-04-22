@@ -55,46 +55,72 @@ void NetworkingSystem<SSL>::update() {
 
 template <bool SSL>
 void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
-  ;
+  using namespace std::placeholders;
   app.get("/hello", [](auto *res,
                        auto *req) { res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!"); })
-      .template ws<SocketData>(
-          "/play", {.compression = uWS::SHARED_COMPRESSOR,
-                    .maxPayloadLength = 1024,
-                    .idleTimeout = 0,
-                    .maxBackpressure = 1 * 1024 * 1024,
-                    .open =
-                        [this](uWS::WebSocket<SSL, true> *ws, uWS::HttpRequest *req) {
-                          std::cout << "connected" << std::endl;
-                          QueuedTask tsk = [this, ws]() {
-                            auto id = mRegistry.create();
-                            auto data = (SocketData *)ws->getUserData();
-                            auto netClient = mRegistry.assign<component::NetClient<SSL>>(id, ws);
-                            data->closed = netClient.closed;
-                          };
-                          while (!mTaskQueue.push(&tsk)) {
-                          }
-                        },
-                    .message =
-                        [](auto *ws, std::string_view message, uWS::OpCode opCode) {
-                          std::cout << "message: " << message << std::endl;
-                          ws->send(message, opCode);  // this echoes?
-                        },
-                    .drain = [](auto *ws) { std::cout << "Drain?" << std::endl; },
-                    .ping =
-                        [](auto *ws) {
-                          // respond with pong?
-                          std::cout << "Received ping." << std::endl;
-                        },
-                    .pong = [](auto *ws) { std::cout << "Received pong." << std::endl; },
-                    .close = [](uWS::WebSocket<SSL, true> *ws, int code,
-                                std::string_view message) { std::cout << "Connection closed." << std::endl; }})
-      .listen("0.0.0.0", port, [port](auto *token) {
-        if (!token) {
-          std::cout << "No token!" << std::endl;
-        }
-        std::cout << "Listening on port " << port << std::endl;
-      });
+      .template ws<SocketData>("/play", {.compression = uWS::SHARED_COMPRESSOR,
+                                         .maxPayloadLength = 1024,
+                                         .idleTimeout = 0,
+                                         .maxBackpressure = 1 * 1024 * 1024,
+                                         .open = std::bind(&NetworkingSystem<SSL>::onOpen, this, _1, _2),
+                                         .message = std::bind(&NetworkingSystem<SSL>::onMessage, this, _1, _2, _3),
+                                         .drain = std::bind(&NetworkingSystem<SSL>::onDrain, this, _1),
+                                         .ping = std::bind(&NetworkingSystem<SSL>::onPing, this, _1),
+                                         .pong = std::bind(&NetworkingSystem<SSL>::onPong, this, _1),
+                                         .close = std::bind(&NetworkingSystem<SSL>::onClose, this, _1, _2, _3)})
+      .listen("0.0.0.0", port,
+              [port](auto *token) {
+                if (!token) {
+                  std::cout << "No token!" << std::endl;
+                }
+                std::cout << "Listening on port " << port << std::endl;
+              })
+      .run();
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onOpen(WebSocket *ws, uWS::HttpRequest *req) {
+  std::cout << "connected" << std::endl;
+  QueuedTask tsk = [this, ws]() {
+    auto id = mRegistry.create();
+    auto data = (SocketData *)ws->getUserData();
+    auto netClient = mRegistry.assign<component::NetClient<SSL>>(id, ws);
+    data->closed = netClient.closed;
+  };
+  while (!mTaskQueue.push(&tsk)) {
+  }
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode) {
+  auto verifier = flatbuffers::Verifier(reinterpret_cast<const uint8_t *>(message.data()), message.size());
+  if (!net::VerifyPacketBuffer(verifier)) {
+    std::cout << "Received malformed packet from client!" << std::endl;
+    // todo handle more gracefully
+  }
+  const net::Packet *packet = net::GetPacket(reinterpret_cast<const uint8_t *>(message.data()));
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onDrain(WebSocket *ws) {
+  // todo idk what do do on drain-- need to relieve some backpressure I suppose?
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onPing(WebSocket *ws) {
+  std::cout << "Received ping." << std::endl;
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onPong(WebSocket *ws) {
+  std::cout << "Received pong." << std::endl;
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::onClose(WebSocket *ws, int code, std::string_view message) {
+  auto data = (SocketData *)ws->getUserData();
+  *(data->closed.get()) = false;
+  std::cout << "Client connection closed." << std::endl;
 }
 
 template class NetworkingSystem<true>;
