@@ -9,12 +9,16 @@ namespace spac::server::component {
 
     template<bool SSL>
     struct NetClient {
+        entt::entity id;
         uWS::WebSocket<SSL, true> *conn;
         std::unordered_set<entt::entity> knownEntities;
     };
 
-    template class NetClient<true>;
-    template class NetClient<false>;
+    template
+    class NetClient<true>;
+
+    template
+    class NetClient<false>;
 
 }
 

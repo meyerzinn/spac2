@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <unordered_set>
 #include <chrono>
-#include <cstring>
 #include <iostream>
 
 constexpr milliseconds PERCEPTION_PERIOD(50);
@@ -30,9 +29,8 @@ namespace spac::server::system {
     template<bool SSL>
     NetworkingSystem<SSL>::NetworkingSystem(entt::registry &registry, b2World &world): System(registry),
                                                                                        mWorld(world) {
-        auto const var = &NetworkingSystem<SSL>::onNetClientComponentDestroyed;
-        using Component = component::NetClient<SSL>;
-        registry.on_destroy<Component>().connect<var>(this);
+        registry.on_destroy<component::NetClient<SSL>>()
+                .template connect<&NetworkingSystem<SSL>::onNetClientComponentDestroyed>(this);
     }
 
     template<bool SSL>
@@ -173,49 +171,50 @@ namespace spac::server::system {
     }
 
     template<bool SSL>
-    void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
+    void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp <SSL> app) {
         using SocketData = component::NetClient<SSL>;
-        app.get("/hello", [](auto *res, auto *req) {
-            res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!");
-        });
-
-//        .ws<SocketData>("/play", {
-//                .compression = uWS::SHARED_COMPRESSOR,
-//                .maxPayloadLength = 1024,
-//                .idleTimeout = 0,
-//                .maxBackpressure = 1 * 1024 * 1024,
-//                .open = [](uWS::WebSocket<SSL, true> *ws, uWS::HttpRequest *req) {
-//                    std::cout << "connected" << std::endl;
-////                    task tsk = [&registry, &ws]() {
-////                        auto *data = (socketData *) ws->getUserData();
-////                        data->id = registry.create();
-////                        registry.assign<WebSocket *>(data->id, ws);
-////                    };
-////                    while (!task_queue.push(&tsk)) {}
-//                },
-//                .message = [](auto *ws, std::string_view message, uWS::OpCode opCode) {
-//                    std::cout << "message: " << message << std::endl;
-//                    ws->send(message, opCode); // this echoes?
-//                },
-//                .drain = [](auto *ws) {
-//                    std::cout << "Drain?" << std::endl;
-//                },
-//                .ping = [](auto *ws) {
-//                    // respond with pong?
-//                    std::cout << "Received ping." << std::endl;
-//                },
-//                .pong = [](auto *ws) {
-//                    std::cout << "Received pong." << std::endl;
-//                },
-//                .close = [](uWS::WebSocket<SSL, true> *ws, int code, std::string_view message) {
-//                    std::cout << "Connection closed." << std::endl;
-//                }
-//        }).listen("0.0.0.0", port, [port](auto *token) {
-//            if (!token) {
-//                std::cout << "No token!" << std::endl;
-//            }
-//            std::cout << "Listening on port " << port << std::endl;
-//        });
+        app
+                .get("/hello", [](auto *res, auto *req) {
+                    res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!");
+                })
+                .template ws<SocketData>("/play", {
+                        .compression = uWS::SHARED_COMPRESSOR,
+                        .maxPayloadLength = 1024,
+                        .idleTimeout = 0,
+                        .maxBackpressure = 1 * 1024 * 1024,
+                        .open = [this](uWS::WebSocket<SSL, true> *ws, uWS::HttpRequest *req) {
+                            std::cout << "connected" << std::endl;
+                            auto *data = (SocketData *) ws->getUserData();
+                            data->conn = ws;
+                            QueuedTask tsk = [this, data]() {
+                                data->id = mRegistry.create();
+                                mRegistry.assign<SocketData *>(data->id, data);
+                            };
+                            while (!mTaskQueue.push(&tsk)) {}
+                        },
+                        .message = [](auto *ws, std::string_view message, uWS::OpCode opCode) {
+                            std::cout << "message: " << message << std::endl;
+                            ws->send(message, opCode); // this echoes?
+                        },
+                        .drain = [](auto *ws) {
+                            std::cout << "Drain?" << std::endl;
+                        },
+                        .ping = [](auto *ws) {
+                            // respond with pong?
+                            std::cout << "Received ping." << std::endl;
+                        },
+                        .pong = [](auto *ws) {
+                            std::cout << "Received pong." << std::endl;
+                        },
+                        .close = [](uWS::WebSocket<SSL, true> *ws, int code, std::string_view message) {
+                            std::cout << "Connection closed." << std::endl;
+                        }
+                }).listen("0.0.0.0", port, [port](auto *token) {
+                    if (!token) {
+                        std::cout << "No token!" << std::endl;
+                    }
+                    std::cout << "Listening on port " << port << std::endl;
+                });
     }
 
 
