@@ -81,7 +81,7 @@ void PerceptionsSystem<SSL>::update() {
         flags |= (uint8_t(sideBoosterMassEjectedProportion) << 4u);
         if (oSideBooster.lastBurnedMass >= 0) flags |= (1u << 3u);
 
-        if (oShield.engaged) flags |= (1u << 7u);
+        if (oShield.fixture) flags |= (1u << 7u);
 
         auto position = net::b2Vec2_to_vec2f(oPhysics.body->GetPosition());
         auto velocity = net::b2Vec2_to_vec2f(oPhysics.body->GetLinearVelocity());

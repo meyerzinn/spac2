@@ -5,22 +5,20 @@
 
 namespace spac::server::system {
 
-    class CollisionsSystem : public spac::System, public b2ContactListener {
-    public:
-        CollisionsSystem(entt::registry &registry, b2World &world);
+class CollisionsSystem : public spac::System, public b2ContactListener {
+ public:
+  CollisionsSystem(entt::registry &registry, b2World &world);
 
-        void update() override;
+  void update() override;
 
-        /*
-         * Box2D contact handler
-         */
-        void PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) override;
+  /*
+   * Box2D contact handler
+   */
+  void PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) override;
 
-    private:
-        b2World &mWorld;
+ private:
+  b2World &mWorld;
 
-        void handleCollision(entt::entity damager, entt::entity target, float impulse);
-    };
-}
-
-
+  void handleCollision(entt::entity damager, entt::entity target, float impulse);
+};
+}  // namespace spac::server::system

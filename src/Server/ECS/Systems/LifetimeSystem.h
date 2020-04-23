@@ -4,13 +4,11 @@
 
 namespace spac::server::system {
 
-    class LifetimeSystem : public spac::System {
-    public:
-        using System::System;
+class LifetimeSystem : public spac::System {
+ public:
+  using System::System;
 
-        void update() override;
-    };
+  void update() override;
+};
 
-}
-
-
+}  // namespace spac::server::system

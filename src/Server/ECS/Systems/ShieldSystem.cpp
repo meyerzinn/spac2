@@ -45,6 +45,5 @@ void ShieldSystem::disableShield(component::Shield &shield, component::PhysicsBo
   body->DestroyFixture(shield.fixture);
   shield.fixture = nullptr;
 }
-ShieldSystem::ShieldSystem(entt::registry &registry) : System(registry) { shieldShape.m_radius = SHIELD_RADIUS; }
 
 }  // namespace spac::server::system

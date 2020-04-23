@@ -20,16 +20,6 @@ namespace spac::server::system {
             mWorld.DestroyBody(physics.body);
         }
 
-        // destroy physics fixtures (again, careful with memory management)
-        auto taggedWithShield = mRegistry.view<component::TaggedToDestroy, component::Shield>();
-        for (auto entity : taggedWithShield) {
-            auto shield = mRegistry.get<component::Shield>(entity);
-            if (!shield.engaged) {
-                // the shield is not attached to the body, so we need to explicitly free it (maybe?)
-                delete shield.fixture;
-            }
-        }
-
         auto tagged = mRegistry.view<component::TaggedToDestroy>();
         mRegistry.destroy(tagged.begin(), tagged.end());
     }
