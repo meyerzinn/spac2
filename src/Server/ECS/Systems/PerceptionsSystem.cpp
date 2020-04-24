@@ -1,6 +1,5 @@
 #include "PerceptionsSystem.h"
 #include <CollisionFlags.h>
-#include <box2d/b2_math.h>
 #include <flatbuffers/flatbuffers.h>
 #include <chrono>
 #include <vector>

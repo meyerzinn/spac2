@@ -1,4 +1,4 @@
-namespace spac::net;
+namespace spac.net;
 
 table Respawn {
     name:string;

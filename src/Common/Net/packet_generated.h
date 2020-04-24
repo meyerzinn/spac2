@@ -9,6 +9,9 @@
 namespace spac {
 namespace net {
 
+struct Respawn;
+struct RespawnBuilder;
+
 struct vec2f;
 
 struct ShipMetadata;
@@ -34,15 +37,17 @@ struct PacketBuilder;
 
 enum Message {
   Message_NONE = 0,
-  Message_Perception = 1,
-  Message_Death = 2,
+  Message_Respawn = 1,
+  Message_Perception = 2,
+  Message_Death = 3,
   Message_MIN = Message_NONE,
   Message_MAX = Message_Death
 };
 
-inline const Message (&EnumValuesMessage())[3] {
+inline const Message (&EnumValuesMessage())[4] {
   static const Message values[] = {
     Message_NONE,
+    Message_Respawn,
     Message_Perception,
     Message_Death
   };
@@ -50,8 +55,9 @@ inline const Message (&EnumValuesMessage())[3] {
 }
 
 inline const char * const *EnumNamesMessage() {
-  static const char * const names[4] = {
+  static const char * const names[5] = {
     "NONE",
+    "Respawn",
     "Perception",
     "Death",
     nullptr
@@ -67,6 +73,10 @@ inline const char *EnumNameMessage(Message e) {
 
 template<typename T> struct MessageTraits {
   static const Message enum_value = Message_NONE;
+};
+
+template<> struct MessageTraits<spac::net::Respawn> {
+  static const Message enum_value = Message_Respawn;
 };
 
 template<> struct MessageTraits<spac::net::Perception> {
@@ -101,6 +111,57 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec2f FLATBUFFERS_FINAL_CLASS {
   }
 };
 FLATBUFFERS_STRUCT_END(vec2f, 8);
+
+struct Respawn FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef RespawnBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NAME = 4
+  };
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           verifier.EndTable();
+  }
+};
+
+struct RespawnBuilder {
+  typedef Respawn Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(Respawn::VT_NAME, name);
+  }
+  explicit RespawnBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  flatbuffers::Offset<Respawn> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Respawn>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Respawn> CreateRespawn(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> name = 0) {
+  RespawnBuilder builder_(_fbb);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Respawn> CreateRespawnDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *name = nullptr) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  return spac::net::CreateRespawn(
+      _fbb,
+      name__);
+}
 
 struct ShipMetadata FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ShipMetadataBuilder Builder;
@@ -572,6 +633,9 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const void *>(VT_MESSAGE);
   }
   template<typename T> const T *message_as() const;
+  const spac::net::Respawn *message_as_Respawn() const {
+    return message_type() == spac::net::Message_Respawn ? static_cast<const spac::net::Respawn *>(message()) : nullptr;
+  }
   const spac::net::Perception *message_as_Perception() const {
     return message_type() == spac::net::Message_Perception ? static_cast<const spac::net::Perception *>(message()) : nullptr;
   }
@@ -586,6 +650,10 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.EndTable();
   }
 };
+
+template<> inline const spac::net::Respawn *Packet::message_as<spac::net::Respawn>() const {
+  return message_as_Respawn();
+}
 
 template<> inline const spac::net::Perception *Packet::message_as<spac::net::Perception>() const {
   return message_as_Perception();
@@ -630,6 +698,10 @@ inline bool VerifyMessage(flatbuffers::Verifier &verifier, const void *obj, Mess
   switch (type) {
     case Message_NONE: {
       return true;
+    }
+    case Message_Respawn: {
+      auto ptr = reinterpret_cast<const spac::net::Respawn *>(obj);
+      return verifier.VerifyTable(ptr);
     }
     case Message_Perception: {
       auto ptr = reinterpret_cast<const spac::net::Perception *>(obj);

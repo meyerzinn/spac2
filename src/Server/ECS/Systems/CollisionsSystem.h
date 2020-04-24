@@ -19,6 +19,6 @@ class CollisionsSystem : public spac::System, public b2ContactListener {
  private:
   b2World &mWorld;
 
-  void handleCollision(entt::entity damager, entt::entity target, float impulse);
+  void handleCollision(entt::entity entityA, entt::entity entityB, float impulse);
 };
 }  // namespace spac::server::system

@@ -43,7 +43,7 @@ struct Booster {
 
 struct Shield {
   b2Fixture *fixture;
-  // how much fuel is required per second (kg/s)
+  // how much fuel is required to keep the shield active (kg/s)
   float burnRate = 1.;
 };
 
@@ -54,11 +54,5 @@ struct SideBooster {
   float burnRate = 1.;
   float maxAngularVelocity = 0.1;
 };
-//
-//    struct Shield {
-//        bool active = false;
-//        float damage = 100;
-//        float maxDamage = 100;
-//        float regenerate = 1;
-//    };
+
 }  // namespace spac::server::component

@@ -42,6 +42,9 @@ class NetworkingSystem : public spac::System {
   void onPong(WebSocket *ws);
   void onClose(WebSocket *ws, int code, std::string_view message);
 
+  void handleRespawn(entt::entity entity, const net::Packet *packet);
+  void handleInputs();
+
   struct SocketData {
     entt::entity id = entt::null;
     std::shared_ptr<std::atomic<bool>> closed;

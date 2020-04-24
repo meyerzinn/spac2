@@ -6,9 +6,13 @@
 
 namespace spac::server::component {
 struct Health {
+  explicit Health(float max);
+
   float current;
   float max;
 };
+
+Health::Health(float max) : current(max), max(max){}
 
 struct DealsDamage {
   float scalar = 0.5;

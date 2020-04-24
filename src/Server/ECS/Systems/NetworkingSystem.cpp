@@ -16,6 +16,8 @@ using namespace std::chrono;
 
 namespace spac::server::system {
 
+constexpr float SHIP_DENSITY = 7900;
+
 template <bool SSL>
 NetworkingSystem<SSL>::NetworkingSystem(entt::registry &registry, b2World &world, uWS::Loop *loop)
     : System(registry),
@@ -58,16 +60,17 @@ void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
   using namespace std::placeholders;
   app.get("/hello", [](auto *res,
                        auto *req) { res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!"); })
-      .template ws<SocketData>("/play", {.compression = uWS::SHARED_COMPRESSOR,
-                                         .maxPayloadLength = 1024,
-                                         .idleTimeout = 0,
-                                         .maxBackpressure = 1 * 1024 * 1024,
-                                         .open = std::bind(&NetworkingSystem<SSL>::onOpen, this, _1, _2),
-                                         .message = std::bind(&NetworkingSystem<SSL>::onMessage, this, _1, _2, _3),
-                                         .drain = std::bind(&NetworkingSystem<SSL>::onDrain, this, _1),
-                                         .ping = std::bind(&NetworkingSystem<SSL>::onPing, this, _1),
-                                         .pong = std::bind(&NetworkingSystem<SSL>::onPong, this, _1),
-                                         .close = std::bind(&NetworkingSystem<SSL>::onClose, this, _1, _2, _3)})
+      .template ws<SocketData>("/play",
+                               {.compression = uWS::SHARED_COMPRESSOR,
+                                .maxPayloadLength = 1024,
+                                .idleTimeout = 0,
+                                .maxBackpressure = 1 * 1024 * 1024,
+                                .open = [this](auto &&PH1, auto &&PH2) { onOpen(PH1, PH2); },
+                                .message = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onMessage(PH1, PH2, PH3); },
+                                .drain = [this](auto &&PH1) { onDrain(PH1); },
+                                .ping = [this](auto &&PH1) { onPing(PH1); },
+                                .pong = [this](auto &&PH1) { onPong(PH1); },
+                                .close = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onClose(PH1, PH2, PH3); }})
       .listen("0.0.0.0", port,
               [port](auto *token) {
                 if (!token) {
@@ -95,10 +98,20 @@ template <bool SSL>
 void NetworkingSystem<SSL>::onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode) {
   auto verifier = flatbuffers::Verifier(reinterpret_cast<const uint8_t *>(message.data()), message.size());
   if (!net::VerifyPacketBuffer(verifier)) {
-    std::cout << "Received malformed packet from client!" << std::endl;
+    std::cout << "Received malformed packet from client." << std::endl;
+    return;
     // todo handle more gracefully
   }
+  SocketData *socketData = reinterpret_cast<SocketData *>(ws->getUserData());
   const net::Packet *packet = net::GetPacket(reinterpret_cast<const uint8_t *>(message.data()));
+  switch (packet->message_type()) {
+    case net::Message_Respawn:
+      handleRespawn(socketData->id, packet);
+      break;
+    default:
+      std::cout << "Received packet with improper message type from client." << std::endl;
+      break;
+  }
 }
 
 template <bool SSL>
@@ -121,6 +134,53 @@ void NetworkingSystem<SSL>::onClose(WebSocket *ws, int code, std::string_view me
   auto data = (SocketData *)ws->getUserData();
   *(data->closed.get()) = false;
   std::cout << "Client connection closed." << std::endl;
+}
+
+template <bool SSL>
+void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet *packet) {
+  auto name = packet->message_as_Respawn()->name()->str();
+  mLoop->defer([this, entity, name]() {
+    if (!mRegistry.has<component::Named>(entity)) {
+      // spawn player
+      // todo choose spawn position more intelligently
+      auto spawnPosition = b2Vec2_zero;
+
+      mRegistry.assign<component::Named>(entity, name);
+      mRegistry.assign<component::Owner>(entity);
+      mRegistry.assign<component::ShipController>(entity);
+      mRegistry.assign<component::Health>(entity, 100);
+      // todo create fuel fixture
+      mRegistry.assign<component::Fuel>(entity);
+      mRegistry.assign<component::Booster>(entity);
+      mRegistry.assign<component::Shield>(entity);
+      mRegistry.assign<component::SideBooster>(entity);
+      mRegistry.assign<component::DealsDamage>(entity, 0.1);
+
+      b2BodyDef bodyDef;
+      bodyDef.type = b2_dynamicBody;
+      bodyDef.position.Set(spawnPosition.x, spawnPosition.y);
+      bodyDef.allowSleep = true;
+      bodyDef.awake = true;
+      entt::entity *id = new entt::entity(entity);
+      bodyDef.userData = reinterpret_cast<void *>(id);
+      b2Body *body = mWorld.CreateBody(&bodyDef);
+
+      b2Vec2 vertices[3];
+      vertices[0].Set(0, 5.0 - 5.0 / 3.0);
+      vertices[1].Set(-2, -5.0 / 3.0);
+      vertices[2].Set(2, -5.0 / 3.0);
+
+      int32_t count = 3;
+      b2PolygonShape polygonShape;
+      polygonShape.Set(vertices, count);
+
+      b2FixtureDef fixtureDef;
+      fixtureDef.shape = &polygonShape;
+      fixtureDef.density = SHIP_DENSITY;
+      fixtureDef.restitution = 0.8;  // todo tune restitution
+      mRegistry.assign<component::PhysicsBody>(entity, body);
+    }
+  });
 }
 
 template class NetworkingSystem<true>;
