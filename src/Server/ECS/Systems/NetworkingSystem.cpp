@@ -1,22 +1,10 @@
 #include "NetworkingSystem.h"
-#include "Constants.h"
-#include "EntityComponents.h"
-#include "NetworkingComponents.h"
-#include "PhysicsComponents.h"
-#include "ShipComponents.h"
-#include "packet_generated.h"
 
-#include <flatbuffers/flatbuffers.h>
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <unordered_set>
-
-using namespace std::chrono;
 
 namespace spac::server::system {
 
 constexpr float SHIP_DENSITY = 7900;
+constexpr float PERCEPTION_RADIUS = 150;
 
 template <bool SSL>
 NetworkingSystem<SSL>::NetworkingSystem(entt::registry &registry, b2World &world, uWS::Loop *loop)
@@ -152,18 +140,30 @@ void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet
       // todo create fuel fixture
       mRegistry.assign<component::Fuel>(entity);
       mRegistry.assign<component::Booster>(entity);
-      mRegistry.assign<component::Shield>(entity);
+      mRegistry.assign<component::Shielded>(entity);
       mRegistry.assign<component::SideBooster>(entity);
       mRegistry.assign<component::DealsDamage>(entity, 0.1);
+      mRegistry.assign<component::Perceivable>(entity, component::Perceivable::Kind::SHIP);
+      mRegistry.assign<component::Sensing>(entity);
 
       b2BodyDef bodyDef;
       bodyDef.type = b2_dynamicBody;
       bodyDef.position.Set(spawnPosition.x, spawnPosition.y);
       bodyDef.allowSleep = true;
       bodyDef.awake = true;
-      entt::entity *id = new entt::entity(entity);
+      auto *id = new entt::entity(entity);
       bodyDef.userData = reinterpret_cast<void *>(id);
       b2Body *body = mWorld.CreateBody(&bodyDef);
+
+      // todo add shield sensor fixture
+      b2CircleShape sensorShape;
+      sensorShape.m_radius = PERCEPTION_RADIUS;
+
+      b2FixtureDef sensorFixtureDef;
+      sensorFixtureDef.isSensor = true;
+      sensorFixtureDef.userData = reinterpret_cast<void *>(id);
+      sensorFixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
+      sensorFixtureDef.filter.categoryBits = CollisionMask::SENSOR;
 
       b2Vec2 vertices[3];
       vertices[0].Set(0, 5.0 - 5.0 / 3.0);
@@ -175,6 +175,9 @@ void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet
       polygonShape.Set(vertices, count);
 
       b2FixtureDef fixtureDef;
+      fixtureDef.userData = reinterpret_cast<void *>(id);
+      fixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER | CollisionMask::SENSOR;
+      fixtureDef.filter.categoryBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
       fixtureDef.shape = &polygonShape;
       fixtureDef.density = SHIP_DENSITY;
       fixtureDef.restitution = 0.8;  // todo tune restitution

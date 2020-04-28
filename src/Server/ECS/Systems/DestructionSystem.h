@@ -2,6 +2,8 @@
 
 #include <box2d/box2d.h>
 #include "System.h"
+#include "EntityComponents.h"
+#include "PhysicsComponents.h"
 
 namespace spac::server::system {
 class DestructionSystem : public spac::System {

@@ -3,7 +3,14 @@
 #include <uwebsockets/App.h>
 #include <atomic>
 #include <unordered_set>
+#include <box2d/b2_math.h>
+#include <entt/fwd.hpp>
+
 namespace spac::server::component {
+
+struct Perceivable {
+  enum Kind { SHIP, PROJECTILE } kind;
+};
 
 template <bool SSL>
 struct NetClient {
@@ -14,20 +21,10 @@ struct NetClient {
   uWS::WebSocket<SSL, true> *conn;
   std::shared_ptr<std::atomic<bool>> closed = std::make_shared<std::atomic<bool>>(false);
 
-  std::unordered_set<entt::entity> knownEntities;
-  b2Vec2 lastPosition;
+  std::unordered_set<entt::entity> knownEntities{};
+  b2Vec2 lastPosition{};
   std::chrono::time_point<std::chrono::high_resolution_clock> spawned;
 };
-
-template <bool SSL>
-NetClient<SSL>::NetClient(uWS::WebSocket<SSL, true> *ws) : conn(ws) {}
-
-template <bool SSL>
-void NetClient<SSL>::send(uWS::Loop *loop, std::string_view buffer) {
-  loop->defer([this, buffer]() {
-    if (!closed.get()) this->conn->send(buffer);
-  });
-}
 
 template class NetClient<true>;
 

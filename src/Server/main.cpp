@@ -27,7 +27,7 @@ int main() {
   auto lifetime = std::make_shared<system::LifetimeSystem>(registry);
   auto collisions = std::make_shared<system::CollisionsSystem>(registry, world);
   auto networking = std::make_shared<system::NetworkingSystem<true>>(registry, world, uWS::Loop::get());
-  auto perceptions = std::make_shared<system::PerceptionsSystem<true>>(registry, world, uWS::Loop::get());
+  auto perceptions = std::make_shared<system::PerceptionsSystem<true>>(registry, uWS::Loop::get());
   auto destruction = std::make_shared<system::DestructionSystem>(registry, world);
 
   std::vector<std::shared_ptr<spac::System>> systems = {booster,    shield,      lifetime,   collisions,

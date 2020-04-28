@@ -21,8 +21,8 @@ constexpr milliseconds PERCEPTION_PERIOD(50);
 constexpr float PERCEPTION_RADIUS = 1000;  // in meters
 
 template <bool SSL>
-PerceptionsSystem<SSL>::PerceptionsSystem(entt::registry &registry, b2World &world, uWS::Loop *loop)
-    : System(registry), mWorld(world), mLoop(loop) {}
+PerceptionsSystem<SSL>::PerceptionsSystem(entt::registry &registry, /*b2World &world,*/ uWS::Loop *loop)
+    : System(registry), /*mWorld(world),*/ mLoop(loop) {}
 
 template <bool SSL>
 void PerceptionsSystem<SSL>::update() {
@@ -31,83 +31,92 @@ void PerceptionsSystem<SSL>::update() {
   if (now - mLastPerception > PERCEPTION_PERIOD) {
     mLastPerception = now;
 
-    auto clients = mRegistry.view<component::NetClient<SSL>>();
+    // some top-level views to optimize random access patterns
+    auto ships = mRegistry.view<component::PhysicsBody, component::Health, component::Booster, component::SideBooster,
+                                component::Shielded>();
+    auto projectiles =
+        mRegistry.view<component::PhysicsBody, component::Perceivable, component::DealsDamage, component::Health>(
+            entt::exclude<component::NetClient<true>>);
+
+    auto clients = mRegistry.view<component::NetClient<SSL>, component::Sensing>();
     for (auto client : clients) {
       // use a separate builder for each client to avoid needing to copy memory
       flatbuffers::FlatBufferBuilder builder(1024);
 
       auto &net = clients.template get<component::NetClient<SSL>>(client);
+      auto sensing = clients.template get<component::Sensing>(client);
 
-      NetQueryCallback queryCallback;
-      b2AABB viewableRegion;  // TODO make a separate, smaller region for
-      // sending metadata
-      auto center = net.lastPosition;
-      viewableRegion.lowerBound = center + b2Vec2(-PERCEPTION_RADIUS, -PERCEPTION_RADIUS);
-      viewableRegion.upperBound = center + b2Vec2(PERCEPTION_RADIUS, PERCEPTION_RADIUS);
-      mWorld.QueryAABB(&queryCallback, viewableRegion);
+      std::unordered_set<entt::entity> knownEntities;
 
       std::vector<flatbuffers::Offset<net::ShipMetadata>> shipMetas;
       std::vector<flatbuffers::Offset<net::ShipDelta>> shipDeltas;
-
-      std::unordered_set<entt::entity> knownEntities;
-      for (auto shipId : queryCallback.foundShips) {
-        knownEntities.insert(shipId);
-        auto [oPhysics, oHealth, oBooster, oSideBooster, oShield] =
-            mRegistry.get<component::PhysicsBody, component::Health, component::Booster, component::SideBooster,
-                          component::Shield>(shipId);
-        if (net.knownEntities.find(shipId) == net.knownEntities.end()) {
-          // introduce the ship
-          auto oShip = mRegistry.get<component::Named>(shipId);
-          auto shipMeta = net::CreateShipMetadataDirect(builder, static_cast<uint32_t>(shipId), oShip.name.c_str());
-          shipMetas.push_back(shipMeta);
-          net.knownEntities.insert(shipId);
-        }
-
-        auto health =
-            uint8_t(std::min<float>(256 * std::ceil(std::clamp<float>(oHealth.current / oHealth.max, 0., 1.)), 255));
-
-        uint8_t flags;
-
-        auto boosterMassEjectedProportion = std::min<float>(
-            7, 8.0 * std::clamp<float>(oBooster.lastBurnedMass / (oBooster.exhaustSpeed * FIXED_SIMULATION_DURATION),
-                                       0., 1.));
-        flags |= uint8_t(boosterMassEjectedProportion);
-
-        auto sideBoosterMassEjectedProportion =
-            std::min<float>(3, 4 * std::clamp<float>(std::abs(oSideBooster.lastBurnedMass) /
-                                                         (oSideBooster.exhaustSpeed * FIXED_SIMULATION_DURATION),
-                                                     0, 1));
-        flags |= (uint8_t(sideBoosterMassEjectedProportion) << 4u);
-        if (oSideBooster.lastBurnedMass >= 0) flags |= (1u << 3u);
-
-        if (oShield.fixture) flags |= (1u << 7u);
-
-        auto position = net::b2Vec2_to_vec2f(oPhysics.body->GetPosition());
-        auto velocity = net::b2Vec2_to_vec2f(oPhysics.body->GetLinearVelocity());
-        auto shipDelta =
-            net::CreateShipDelta(builder, static_cast<uint32_t>(shipId), &position, &velocity,
-                                 oPhysics.body->GetAngle(), oPhysics.body->GetAngularVelocity(), health, flags);
-        shipDeltas.push_back(shipDelta);
-      }
-
       std::vector<flatbuffers::Offset<net::ProjectileMetadata>> projectileMetas;
       std::vector<flatbuffers::Offset<net::ProjectileDelta>> projectileDeltas;
 
-      for (auto projectileId : queryCallback.foundProjectiles) {
-        knownEntities.insert(projectileId);
-        auto oPhysics = mRegistry.get<component::PhysicsBody>(projectileId);
-        if (net.knownEntities.find(projectileId) == net.knownEntities.end()) {
-          auto owned = mRegistry.get<component::Owned>(projectileId);
-          auto projectileMeta = net::CreateProjectileMetadata(builder, static_cast<uint32_t>(projectileId),
-                                                              static_cast<uint32_t>(owned.owner));
-          projectileMetas.push_back(projectileMeta);
-        }
-        auto position = net::b2Vec2_to_vec2f(oPhysics.body->GetPosition());
-        auto velocity = net::b2Vec2_to_vec2f(oPhysics.body->GetLinearVelocity());
+      for (auto entity : sensing.entities) {
+        auto perceivable = mRegistry.get<component::Perceivable>(entity);
+        switch (perceivable.kind) {
+          case component::Perceivable::Kind::SHIP: {
+            knownEntities.insert(entity);
+            auto [oPhysics, oHealth, oBooster, oSideBooster, oShield] =
+                mRegistry.get<component::PhysicsBody, component::Health, component::Booster, component::SideBooster,
+                              component::Shielded>(entity);
+            if (net.knownEntities.find(entity) == net.knownEntities.end()) {
+              // introduce the ship
+              auto oShip = mRegistry.get<component::Named>(entity);
+              auto shipMeta = net::CreateShipMetadataDirect(builder, static_cast<uint32_t>(entity), oShip.name.c_str());
+              shipMetas.push_back(shipMeta);
+              net.knownEntities.insert(entity);
+            }
 
-        auto projectileDelta =
-            net::CreateProjectileDelta(builder, static_cast<uint32_t>(projectileId), &position, &velocity);
-        projectileDeltas.push_back(projectileDelta);
+            auto health = uint8_t(
+                std::min<float>(256 * std::ceil(std::clamp<float>(oHealth.current / oHealth.max, 0., 1.)), 255));
+
+            uint8_t flags;
+
+            auto boosterMassEjectedProportion = std::min<float>(
+                7, 8.0 * std::clamp<float>(
+                             oBooster.lastBurnedMass / (oBooster.exhaustSpeed * FIXED_SIMULATION_DURATION), 0., 1.));
+            flags |= uint8_t(boosterMassEjectedProportion);
+
+            auto sideBoosterMassEjectedProportion =
+                std::min<float>(3, 4 * std::clamp<float>(std::abs(oSideBooster.lastBurnedMass) /
+                                                             (oSideBooster.exhaustSpeed * FIXED_SIMULATION_DURATION),
+                                                         0, 1));
+            flags |= (uint8_t(sideBoosterMassEjectedProportion) << 4u);
+            if (oSideBooster.lastBurnedMass >= 0) flags |= (1u << 3u);
+
+            if (oShield.fixture) flags |= (1u << 7u);
+
+            auto position = net::b2Vec2_to_vec2f(oPhysics.body->GetPosition());
+            auto velocity = net::b2Vec2_to_vec2f(oPhysics.body->GetLinearVelocity());
+            auto shipDelta =
+                net::CreateShipDelta(builder, static_cast<uint32_t>(entity), &position, &velocity,
+                                     oPhysics.body->GetAngle(), oPhysics.body->GetAngularVelocity(), health, flags);
+            shipDeltas.push_back(shipDelta);
+            break;
+          }
+          case component::Perceivable::Kind::PROJECTILE: {
+            knownEntities.insert(entity);
+            auto oPhysics = mRegistry.get<component::PhysicsBody>(entity);
+            if (net.knownEntities.find(entity) == net.knownEntities.end()) {
+              auto owned = mRegistry.get<component::Owned>(entity);
+              auto projectileMeta = net::CreateProjectileMetadata(builder, static_cast<uint32_t>(entity),
+                                                                  static_cast<uint32_t>(owned.owner));
+              projectileMetas.push_back(projectileMeta);
+            }
+            auto position = net::b2Vec2_to_vec2f(oPhysics.body->GetPosition());
+            auto velocity = net::b2Vec2_to_vec2f(oPhysics.body->GetLinearVelocity());
+
+            auto projectileDelta =
+                net::CreateProjectileDelta(builder, static_cast<uint32_t>(entity), &position, &velocity);
+            projectileDeltas.push_back(projectileDelta);
+            break;
+          }
+          default:
+            // how would this even happen?
+            break;
+        }
       }
 
       auto fuel = mRegistry.get<component::Fuel>(client);
@@ -136,16 +145,6 @@ void PerceptionsSystem<SSL>::update() {
     }
   }
 }
-
-template <bool SSL>
-bool PerceptionsSystem<SSL>::NetQueryCallback::ReportFixture(b2Fixture *fixture) {
-  if ((fixture->GetFilterData().categoryBits & EntityCategory::SHIP) != 0u) {
-    foundShips.insert(*static_cast<entt::entity *>(fixture->GetBody()->GetUserData()));
-  } else if ((fixture->GetFilterData().categoryBits & EntityCategory::PROJECTILE) != 0u) {
-    foundProjectiles.insert(*static_cast<entt::entity *>(fixture->GetBody()->GetUserData()));
-  }
-  return true;
-};
 
 template class PerceptionsSystem<true>;
 template class PerceptionsSystem<false>;

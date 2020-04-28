@@ -13,6 +13,10 @@
 #include <unordered_set>
 #include "CollisionFlags.h"
 #include "Constants.h"
+#include "EntityComponents.h"
+#include "NetworkingComponents.h"
+#include "PhysicsComponents.h"
+#include "ShipComponents.h"
 #include "System.h"
 #include "packet_generated.h"
 

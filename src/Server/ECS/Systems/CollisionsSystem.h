@@ -16,9 +16,14 @@ class CollisionsSystem : public spac::System, public b2ContactListener {
    */
   void PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) override;
 
+  void BeginContact(b2Contact *contact) override;
+  void EndContact(b2Contact *contact) override;
+
  private:
   b2World &mWorld;
 
-  void handleCollision(entt::entity entityA, entt::entity entityB, float impulse);
+  void handleBeginSensorCollision(entt::entity entityA, entt::entity entityB);
+  void handleEndSensorCollision(entt::entity entityA, entt::entity entityB);
+  void handleImpulsiveCollision(entt::entity entityA, entt::entity entityB, float impulse);
 };
 }  // namespace spac::server::system

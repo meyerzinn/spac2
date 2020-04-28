@@ -15,16 +15,16 @@ struct ShipController {
 };
 
 struct Fuel {
+  // fixture stores a reference to the fuel storage container so we
+  // can physically simulate the effects of ejecting fuel
+  b2Fixture *fixture;
+
   // accumulated fuel (kg)
   float stored = 2400;
   // maximum fuel (kg)
   float capacity = 2400;
   // fuel to regenerate per tick (kg)
   float regenerate = 100;
-
-  // fixture stores a reference to the fuel storage container so we
-  // can physically simulate the effects of ejecting fuel
-  b2Fixture *fixture;
 };
 
 // Rocket booster
@@ -41,9 +41,10 @@ struct Booster {
   float maxLinearVelocity = 2;
 };
 
-struct Shield {
+struct Shielded {
   b2Fixture *fixture;
-  // how much fuel is required to keep the shield active (kg/s)
+  entt::entity shield = entt::null;  // create a new Sensing entity every time the shield is engaged
+  // how much fuel is required to keep the shield engaged (kg/s)
   float burnRate = 1.;
 };
 

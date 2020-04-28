@@ -5,4 +5,5 @@ target_sources(spacserver
             ${CMAKE_CURRENT_LIST_DIR}/PhysicsComponents.h
             ${CMAKE_CURRENT_LIST_DIR}/EntityComponents.h
             ${CMAKE_CURRENT_LIST_DIR}/ShipComponents.h
-            ${CMAKE_CURRENT_LIST_DIR}/NetworkingComponents.h)
+            ${CMAKE_CURRENT_LIST_DIR}/NetworkingComponents.h
+            ${CMAKE_CURRENT_LIST_DIR}/NetworkingComponents.cpp)

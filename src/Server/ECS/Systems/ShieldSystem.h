@@ -12,7 +12,7 @@ class ShieldSystem : public spac::System {
   void update() override;
 
  private:
-  void enableShield(component::Shield &shield, component::PhysicsBody physics);
-  void disableShield(component::Shield &shield, component::PhysicsBody physics);
+  void enableShield(entt::entity entity, component::Shielded &shielded);
+  void disableShield(component::Shielded &shielded);
 };  // namespace spac::server::system
 }  // namespace spac::server::system
