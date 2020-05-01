@@ -1,6 +1,6 @@
 project(spacserver)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(spacserver main.cpp)
 add_executable(spac::server ALIAS ${PROJECT_NAME})
 
 set_property(TARGET spacserver PROPERTY CXX_STANDARD 17)
