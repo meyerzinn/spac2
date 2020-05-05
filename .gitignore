@@ -558,3 +558,10 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/c++,linux,macos,cmake,clion,windows,visualstudio
+
+# Private certs
+certs/
+
+# vcpkg
+vcpkg/
+CMakeSettings.json

@@ -1,33 +1,37 @@
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-#set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-project(spacclient)
-
-add_executable(spacclient main.cpp)
-
-target_compile_definitions(spacclient PRIVATE SUPPORT_HIGH_DPI=1)
+add_executable(client main.cpp)
 
 add_subdirectory(ECS)
 add_subdirectory(Scenes)
+add_subdirectory(Networking)
 
 find_package(EnTT CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(raylib CONFIG REQUIRED)
-find_package(websocketpp CONFIG REQUIRED)
-find_package(Boost 1.72 REQUIRED)
+find_package(Boost 1.72 REQUIRED COMPONENTS system thread log REQUIRED)
+find_package(OpenSSL REQUIRED)
 
-target_compile_options(spacclient PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined)
+target_compile_options(client
+        PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
+        $<$<CXX_COMPILER_ID:Clang>:-fsanitize=address -fno-omit-frame-pointer>)
 
-#target_link_options(spacclient PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-
-target_include_directories(spacclient PRIVATE
+target_include_directories(client PRIVATE
+        ${Boost_INCLUDE_DIRS}
         ${raylib_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS})
-target_link_libraries(spacclient PRIVATE
-        spac::common
-        raylib
+        ${CMAKE_CURRENT_LIST_DIR})
+
+target_sources(client PRIVATE ${CMAKE_CURRENT_LIST_DIR}/GameLoop.h ${CMAKE_CURRENT_LIST_DIR}/GameLoop.cpp)
+
+target_link_libraries(client PRIVATE
+        common
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${raylib_LIBRARIES}
         EnTT::EnTT
-        glfw
-        websocketpp::websocketpp
         ${Boost_LIBRARIES}
-        -fsanitize=address)
+        ${Boost_SYSTEM_LIBRARY}
+        glfw)
+
+if(WIN32)
+    target_link_libraries(client PRIVATE crypt32)
+endif()

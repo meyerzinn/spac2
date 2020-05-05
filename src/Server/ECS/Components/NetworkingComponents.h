@@ -26,8 +26,8 @@ struct NetClient {
   std::chrono::time_point<std::chrono::high_resolution_clock> spawned;
 };
 
-template class NetClient<true>;
+template struct NetClient<true>;
 
-template class NetClient<false>;
+template struct NetClient<false>;
 
 }  // namespace spac::server::component

@@ -26,7 +26,7 @@ PerceptionsSystem<SSL>::PerceptionsSystem(entt::registry &registry, /*b2World &w
 
 template <bool SSL>
 void PerceptionsSystem<SSL>::update() {
-  auto now = high_resolution_clock::now();
+  auto now = system_clock::now();
   // send perceptions
   if (now - mLastPerception > PERCEPTION_PERIOD) {
     mLastPerception = now;
@@ -70,13 +70,13 @@ void PerceptionsSystem<SSL>::update() {
             }
 
             auto health = uint8_t(
-                std::min<float>(256 * std::ceil(std::clamp<float>(oHealth.current / oHealth.max, 0., 1.)), 255));
+                std::min<float>(256 * std::ceil(std::clamp<float>(oHealth.current / oHealth.max, 0.f, 1.f)), 255));
 
-            uint8_t flags;
+            uint8_t flags = 0;
 
             auto boosterMassEjectedProportion = std::min<float>(
                 7, 8.0 * std::clamp<float>(
-                             oBooster.lastBurnedMass / (oBooster.exhaustSpeed * FIXED_SIMULATION_DURATION), 0., 1.));
+                             oBooster.lastBurnedMass / (oBooster.exhaustSpeed * FIXED_SIMULATION_DURATION), 0.0f, 1.0f));
             flags |= uint8_t(boosterMassEjectedProportion);
 
             auto sideBoosterMassEjectedProportion =

@@ -15,5 +15,6 @@ class Menu : public Scene {
  private:
   Camera2D* mCamera = new Camera2D();
   system::Starfield* mStars;
+  uint8_t mFrame = 0;
 };
 }  // namespace spac::client::scene

@@ -1,6 +1,6 @@
-target_include_directories(spacserver PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(server PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
-target_sources(spacserver
+target_sources(server
         PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/BoosterSystem.h
         ${CMAKE_CURRENT_LIST_DIR}/BoosterSystem.cpp

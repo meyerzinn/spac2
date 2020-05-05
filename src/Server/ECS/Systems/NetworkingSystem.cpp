@@ -1,5 +1,5 @@
 #include "NetworkingSystem.h"
-
+#include <boost/log/trivial.hpp>
 
 namespace spac::server::system {
 
@@ -18,9 +18,9 @@ template <bool SSL>
 void NetworkingSystem<SSL>::update() {
   // Execute all tasks that have been queued -- this is where networking callbacks are allowed to interact with the
   // registry.
-  QueuedTask *t = nullptr;
+  QueuedTask *t;
   while (mTaskQueue.pop(t)) {
-    (*t)();
+    t->operator()();
     delete t;
   }
 
@@ -46,25 +46,27 @@ void NetworkingSystem<SSL>::update() {
 template <bool SSL>
 void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
   using namespace std::placeholders;
+  uWS::TemplatedApp<SSL>::WebSocketBehavior behavior{};
+  behavior.compression = uWS::SHARED_COMPRESSOR;
+  behavior.maxPayloadLength = 1024;
+  behavior.idleTimeout = 0;
+  behavior.maxBackpressure = 1 * 1024 * 1024;
+  behavior.open = [this](auto &&PH1, auto &&PH2) { onOpen(PH1, PH2); };
+  behavior.message = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onMessage(PH1, PH2, PH3); };
+  behavior.drain = [this](auto &&PH1) { onDrain(PH1); };
+  behavior.ping = [this](auto &&PH1) { onPing(PH1); };
+  behavior.pong = [this](auto &&PH1) { onPong(PH1); };
+  behavior.close = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onClose(PH1, PH2, PH3); };
   app.get("/hello", [](auto *res,
                        auto *req) { res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!"); })
-      .template ws<SocketData>("/play",
-                               {.compression = uWS::SHARED_COMPRESSOR,
-                                .maxPayloadLength = 1024,
-                                .idleTimeout = 0,
-                                .maxBackpressure = 1 * 1024 * 1024,
-                                .open = [this](auto &&PH1, auto &&PH2) { onOpen(PH1, PH2); },
-                                .message = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onMessage(PH1, PH2, PH3); },
-                                .drain = [this](auto &&PH1) { onDrain(PH1); },
-                                .ping = [this](auto &&PH1) { onPing(PH1); },
-                                .pong = [this](auto &&PH1) { onPong(PH1); },
-                                .close = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onClose(PH1, PH2, PH3); }})
+      .template ws<SocketData>("/play", std::move(behavior))
       .listen("0.0.0.0", port,
               [port](auto *token) {
-                if (!token) {
-                  std::cout << "No token!" << std::endl;
+                if (token) {
+                  std::cout << "Listening on port " << port << std::endl;
+                } else {
+                  std::cerr << "Could not bind port " << port << std::endl;
                 }
-                std::cout << "Listening on port " << port << std::endl;
               })
       .run();
 }
@@ -72,13 +74,13 @@ void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
 template <bool SSL>
 void NetworkingSystem<SSL>::onOpen(WebSocket *ws, uWS::HttpRequest *req) {
   std::cout << "connected" << std::endl;
-  QueuedTask tsk = [this, ws]() {
+  auto tsk = new QueuedTask([this, ws]() {
     auto id = mRegistry.create();
     auto data = (SocketData *)ws->getUserData();
     auto netClient = mRegistry.assign<component::NetClient<SSL>>(id, ws);
     data->closed = netClient.closed;
-  };
-  while (!mTaskQueue.push(&tsk)) {
+  });
+  while (!mTaskQueue.push(tsk)) {
   }
 }
 
@@ -136,13 +138,13 @@ void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet
       mRegistry.assign<component::Named>(entity, name);
       mRegistry.assign<component::Owner>(entity);
       mRegistry.assign<component::ShipController>(entity);
-      mRegistry.assign<component::Health>(entity, 100);
+      mRegistry.assign<component::Health>(entity, 100.0f);
       // todo create fuel fixture
       mRegistry.assign<component::Fuel>(entity);
       mRegistry.assign<component::Booster>(entity);
       mRegistry.assign<component::Shielded>(entity);
       mRegistry.assign<component::SideBooster>(entity);
-      mRegistry.assign<component::DealsDamage>(entity, 0.1);
+      mRegistry.assign<component::DealsDamage>(entity, 0.1f);
       mRegistry.assign<component::Perceivable>(entity, component::Perceivable::Kind::SHIP);
       mRegistry.assign<component::Sensing>(entity);
 
@@ -166,9 +168,9 @@ void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet
       sensorFixtureDef.filter.categoryBits = CollisionMask::SENSOR;
 
       b2Vec2 vertices[3];
-      vertices[0].Set(0, 5.0 - 5.0 / 3.0);
-      vertices[1].Set(-2, -5.0 / 3.0);
-      vertices[2].Set(2, -5.0 / 3.0);
+      vertices[0].Set(0.0f, 5.0f - 5.0f / 3.0f);
+      vertices[1].Set(-2.0f, -5.0f / 3.0f);
+      vertices[2].Set(2.0f, -5.0f / 3.0f);
 
       int32_t count = 3;
       b2PolygonShape polygonShape;
@@ -180,7 +182,7 @@ void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet
       fixtureDef.filter.categoryBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
       fixtureDef.shape = &polygonShape;
       fixtureDef.density = SHIP_DENSITY;
-      fixtureDef.restitution = 0.8;  // todo tune restitution
+      fixtureDef.restitution = 0.8f;  // todo tune restitution
       mRegistry.assign<component::PhysicsBody>(entity, body);
     }
   });

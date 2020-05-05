@@ -12,6 +12,7 @@
 #include "NetworkingSystem.h"
 #include "PerceptionsSystem.h"
 #include "ShieldSystem.h"
+#include <boost/filesystem.hpp>
 
 using namespace spac::server;
 
@@ -38,7 +39,7 @@ int main() {
     constexpr auto timestep = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<float, std::ratio<1>>(FIXED_SIMULATION_DURATION));
     auto time_start = clock::now();
-    unsigned int updateCounter = 0;
+//    unsigned int updateCounter = 0;
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
     while (true) {
@@ -49,21 +50,25 @@ int main() {
 
       while (lag >= timestep) {
         lag -= timestep;
-        auto updateStart = clock::now();
+        //        auto updateStart = clock::now();
         for (const auto& system : systems) {
           system->update();
         }
-        auto updateEnd = clock::now();
-        updateCounter++;
-        updateCounter %= 60;
-        if (updateCounter == 0) {
-          std::cout << "Update duration: " << (updateEnd - updateStart).count() << "ns" << std::endl;
-        }
+        //        auto updateEnd = clock::now();
+        //        updateCounter++;
+        //        updateCounter %= 60;
+        //        if (updateCounter == 0) {
+        //          std::cout << "Update duration: " << (updateEnd - updateStart).count() << "ns" << std::endl;
+        //        }
       }
     }
 #pragma clang diagnostic pop
   });
 
-  networking->listen(9001, uWS::SSLApp({.key_file_name = "certs/key.pem", .cert_file_name = "carts/cert.pem"}));
+  us_socket_context_options_t options{};
+  options.key_file_name = "certs/key.pem";
+  options.cert_file_name = "certs/cert.pem";
+  std::cout << boost::filesystem::current_path() << std::endl;
+  networking->listen(9002, uWS::SSLApp(options));
   game.join();
 }
