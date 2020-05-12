@@ -4,7 +4,7 @@
 #include "EntityComponents.h"
 #include "PhysicsComponents.h"
 
-#include <NetworkingComponents.h>
+#include <PerceptionComponents.h>
 
 constexpr int32_t velocityIterations = 8;
 constexpr int32_t positionIterations = 3;
@@ -48,8 +48,8 @@ void CollisionsSystem::EndContact(b2Contact *contact) {
 }
 
 void CollisionsSystem::handleImpulsiveCollision(entt::entity entityA, entt::entity entityB, float impulse) {
-  if (auto dealsDamageComponent = mRegistry.try_get<component::DealsDamage>(entityA); dealsDamageComponent) {
-    if (auto healthComponent = mRegistry.try_get<component::Health>(entityB); healthComponent) {
+  if (auto dealsDamageComponent = registry_.try_get<component::DealsDamage>(entityA); dealsDamageComponent) {
+    if (auto healthComponent = registry_.try_get<component::Health>(entityB); healthComponent) {
       auto damage = impulse * dealsDamageComponent->scalar;
       healthComponent->current -= damage;
     }
@@ -57,13 +57,13 @@ void CollisionsSystem::handleImpulsiveCollision(entt::entity entityA, entt::enti
 }
 
 void CollisionsSystem::handleBeginSensorCollision(entt::entity entityA, entt::entity entityB) {
-  if (auto sensor = mRegistry.try_get<component::Sensing>(entityA); sensor) {
-    if (mRegistry.has<component::Perceivable>(entityB)) sensor->entities.insert(entityB);
+  if (auto sensor = registry_.try_get<component::Sensing>(entityA); sensor) {
+    if (registry_.has<component::Perceivable>(entityB)) sensor->entities.insert(entityB);
   }
 }
 
 void CollisionsSystem::handleEndSensorCollision(entt::entity entityA, entt::entity entityB) {
-  if (auto sensor = mRegistry.try_get<component::Sensing>(entityA); sensor) {
+  if (auto sensor = registry_.try_get<component::Sensing>(entityA); sensor) {
     sensor->entities.erase(entityB);
   }
 }

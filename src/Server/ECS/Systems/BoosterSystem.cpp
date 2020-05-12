@@ -6,7 +6,7 @@
 namespace spac::server::system {
 void BoosterSystem::update() {
   auto entities =
-      mRegistry.view<component::ShipController, component::PhysicsBody, component::Fuel, component::Booster>();
+      registry_.view<component::ShipController, component::PhysicsBody, component::Fuel, component::Booster>();
   for (auto entity : entities) {
     auto controller = entities.get<component::ShipController>(entity);
     auto &booster = entities.get<component::Booster>(entity);

@@ -14,6 +14,6 @@ class System {
   virtual void update() = 0;
 
  protected:
-  entt::registry &mRegistry;
+  entt::registry &registry_;
 };
 }  // namespace spac

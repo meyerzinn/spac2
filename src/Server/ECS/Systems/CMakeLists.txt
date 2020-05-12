@@ -12,8 +12,8 @@ target_sources(server
         ${CMAKE_CURRENT_LIST_DIR}/LifetimeSystem.cpp
         ${CMAKE_CURRENT_LIST_DIR}/NetworkingSystem.h
         ${CMAKE_CURRENT_LIST_DIR}/NetworkingSystem.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/PerceptionsSystem.h
-        ${CMAKE_CURRENT_LIST_DIR}/PerceptionsSystem.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/PerceptionSystem.h
+        ${CMAKE_CURRENT_LIST_DIR}/PerceptionSystem.cpp
         ${CMAKE_CURRENT_LIST_DIR}/RefuelSystem.h
         ${CMAKE_CURRENT_LIST_DIR}/RefuelSystem.cpp
         ${CMAKE_CURRENT_LIST_DIR}/ShieldSystem.h

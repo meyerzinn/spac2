@@ -19,7 +19,7 @@ int main() {
   boost::certify::enable_native_https_server_verification(ssl_ctx);
 
   std::shared_ptr<net::Client> client = std::make_shared<net::Client>(ioc, ssl_ctx);
-  client->run("localhost", "9001");
+  client->run("localhost", "9002");
   std::thread net_thread([&ioc]() { ioc.run(); });
   std::cout << "Network connection initiated." << std::endl;
   std::cout << "Starting game loop..." << std::endl;

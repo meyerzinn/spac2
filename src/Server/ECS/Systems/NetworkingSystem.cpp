@@ -1,194 +1,170 @@
 #include "NetworkingSystem.h"
+#include <box2d/box2d.h>
 #include <boost/log/trivial.hpp>
+#include "CollisionFlags.h"
+#include "EntityComponents.h"
+#include "PerceptionComponents.h"
+#include "PhysicsComponents.h"
+#include "ShipComponents.h"
 
 namespace spac::server::system {
 
 constexpr float SHIP_DENSITY = 7900;
 constexpr float PERCEPTION_RADIUS = 150;
 
-template <bool SSL>
-NetworkingSystem<SSL>::NetworkingSystem(entt::registry &registry, b2World &world, uWS::Loop *loop)
-    : System(registry),
-      mWorld(world),
-      mLoop(loop),
-      mDeathObserver{registry,
-                     entt::collector.group<component::NetClient<SSL>>(entt::exclude<component::ShipController>)} {}
+void fail(beast::error_code ec, std::string what) {
+  BOOST_LOG_TRIVIAL(error) << what << ": " << ec.message() << std::endl;
+}
 
-template <bool SSL>
-void NetworkingSystem<SSL>::update() {
-  // Execute all tasks that have been queued -- this is where networking callbacks are allowed to interact with the
-  // registry.
-  QueuedTask *t;
-  while (mTaskQueue.pop(t)) {
-    t->operator()();
-    delete t;
+NetworkingSystem::NetworkingSystem(entt::registry &registry, b2World &world, asio::io_context &ioc, ssl::context &ctx,
+                                   tcp::endpoint endpoint)
+    : System(registry),
+      world_(world),
+      deathObserver_{
+          registry,
+          entt::basic_collector<>::group<component::SessionComponent>(entt::exclude<component::ShipController>),
+      },
+      ioc_(ioc),
+      ctx_(ctx),
+      acceptor_(asio::make_strand(ioc)) {
+  beast::error_code ec;
+  acceptor_.open(endpoint.protocol(), ec);
+  if (ec) {
+    fail(ec, "open");
+    return;
+  }
+  BOOST_LOG_TRIVIAL(debug) << "open" << std::endl;
+
+  acceptor_.set_option(asio::socket_base::reuse_address(false), ec);
+  if (ec) {
+    fail(ec, "set_option");
+    return;
   }
 
+  BOOST_LOG_TRIVIAL(debug) << "set_option" << std::endl;
+
+  acceptor_.bind(endpoint, ec);
+  if (ec) {
+    fail(ec, "bind");
+    return;
+  }
+
+  BOOST_LOG_TRIVIAL(debug) << "bind" << std::endl;
+
+  acceptor_.listen(asio::socket_base::max_listen_connections, ec);
+  if (ec) {
+    fail(ec, "listen");
+    return;
+  }
+
+  BOOST_LOG_TRIVIAL(debug) << "listen" << std::endl;
+}
+
+void NetworkingSystem::update() {
   auto now = high_resolution_clock::now();
 
+  auto clients = registry_.view<component::SessionComponent>();
+  std::string buffer = "";
+  for (entt::entity client : clients) {
+    if (!clients.get(client).conn->read(buffer)) {
+      BOOST_LOG_TRIVIAL(debug) << "Received message from client (" << std::to_string(static_cast<unsigned int>(client))
+                               << "): " << buffer << std::endl;
+    }
+  }
+
   // Send death messages
-  for (auto client : mDeathObserver) {
-    auto &net = mRegistry.get<component::NetClient<SSL>>(client);
+  for (auto client : deathObserver_) {
+    auto &net = registry_.get<component::SessionComponent>(client);
     if (net.spawned.time_since_epoch().count() > 0) {  // make sure the client didn't just connect
-      milliseconds timeAlive = duration_cast<milliseconds>(now - net.spawned);
+      auto timeAlive = duration_cast<milliseconds>(now - net.spawned);
 
       flatbuffers::FlatBufferBuilder builder(64);  // todo set to exact size
-      auto death = net::CreateDeath(builder, timeAlive.count());
-      auto packet = net::CreatePacket(builder, net::Message_Death, death.Union());
-      net::FinishPacketBuffer(builder, packet);
-      std::string_view buffer(reinterpret_cast<const char *>(builder.GetBufferPointer()), builder.GetSize());
-      mLoop->defer([&net, buffer]() { net.conn->send(buffer); });
+      auto death = ::spac::net::CreateDeath(builder, timeAlive.count());
+      auto packet = ::spac::net::CreatePacket(builder, ::spac::net::Message_Death, death.Union());
+      ::spac::net::FinishPacketBuffer(builder, packet);
+      std::string buffer(reinterpret_cast<const char *>(builder.GetBufferPointer()), builder.GetSize());
+      if (auto err = net.conn->write(buffer); err) {
+        registry_.destroy(client);
+      }
     }
   }
-  mDeathObserver.clear();
+  deathObserver_.clear();
 }
 
-template <bool SSL>
-void NetworkingSystem<SSL>::listen(int port, uWS::TemplatedApp<SSL> app) {
-  using namespace std::placeholders;
-  uWS::TemplatedApp<SSL>::WebSocketBehavior behavior{};
-  behavior.compression = uWS::SHARED_COMPRESSOR;
-  behavior.maxPayloadLength = 1024;
-  behavior.idleTimeout = 0;
-  behavior.maxBackpressure = 1 * 1024 * 1024;
-  behavior.open = [this](auto &&PH1, auto &&PH2) { onOpen(PH1, PH2); };
-  behavior.message = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onMessage(PH1, PH2, PH3); };
-  behavior.drain = [this](auto &&PH1) { onDrain(PH1); };
-  behavior.ping = [this](auto &&PH1) { onPing(PH1); };
-  behavior.pong = [this](auto &&PH1) { onPong(PH1); };
-  behavior.close = [this](auto &&PH1, auto &&PH2, auto &&PH3) { onClose(PH1, PH2, PH3); };
-  app.get("/hello", [](auto *res,
-                       auto *req) { res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!"); })
-      .template ws<SocketData>("/play", std::move(behavior))
-      .listen("0.0.0.0", port,
-              [port](auto *token) {
-                if (token) {
-                  std::cout << "Listening on port " << port << std::endl;
-                } else {
-                  std::cerr << "Could not bind port " << port << std::endl;
-                }
-              })
-      .run();
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onOpen(WebSocket *ws, uWS::HttpRequest *req) {
-  std::cout << "connected" << std::endl;
-  auto tsk = new QueuedTask([this, ws]() {
-    auto id = mRegistry.create();
-    auto data = (SocketData *)ws->getUserData();
-    auto netClient = mRegistry.assign<component::NetClient<SSL>>(id, ws);
-    data->closed = netClient.closed;
-  });
-  while (!mTaskQueue.push(tsk)) {
-  }
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode) {
-  auto verifier = flatbuffers::Verifier(reinterpret_cast<const uint8_t *>(message.data()), message.size());
-  if (!net::VerifyPacketBuffer(verifier)) {
-    std::cout << "Received malformed packet from client." << std::endl;
-    return;
-    // todo handle more gracefully
-  }
-  SocketData *socketData = reinterpret_cast<SocketData *>(ws->getUserData());
-  const net::Packet *packet = net::GetPacket(reinterpret_cast<const uint8_t *>(message.data()));
-  switch (packet->message_type()) {
-    case net::Message_Respawn:
-      handleRespawn(socketData->id, packet);
-      break;
-    default:
-      std::cout << "Received packet with improper message type from client." << std::endl;
-      break;
-  }
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onDrain(WebSocket *ws) {
-  // todo idk what do do on drain-- need to relieve some backpressure I suppose?
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onPing(WebSocket *ws) {
-  std::cout << "Received ping." << std::endl;
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onPong(WebSocket *ws) {
-  std::cout << "Received pong." << std::endl;
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::onClose(WebSocket *ws, int code, std::string_view message) {
-  auto data = (SocketData *)ws->getUserData();
-  *(data->closed.get()) = false;
-  std::cout << "Client connection closed." << std::endl;
-}
-
-template <bool SSL>
-void NetworkingSystem<SSL>::handleRespawn(entt::entity entity, const net::Packet *packet) {
+void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Packet *packet) {
   auto name = packet->message_as_Respawn()->name()->str();
-  mLoop->defer([this, entity, name]() {
-    if (!mRegistry.has<component::Named>(entity)) {
-      // spawn player
-      // todo choose spawn position more intelligently
-      auto spawnPosition = b2Vec2_zero;
+  if (!registry_.has<component::Named>(entity)) {
+    // spawn player
+    // todo choose spawn position more intelligently
+    auto spawnPosition = b2Vec2_zero;
 
-      mRegistry.assign<component::Named>(entity, name);
-      mRegistry.assign<component::Owner>(entity);
-      mRegistry.assign<component::ShipController>(entity);
-      mRegistry.assign<component::Health>(entity, 100.0f);
-      // todo create fuel fixture
-      mRegistry.assign<component::Fuel>(entity);
-      mRegistry.assign<component::Booster>(entity);
-      mRegistry.assign<component::Shielded>(entity);
-      mRegistry.assign<component::SideBooster>(entity);
-      mRegistry.assign<component::DealsDamage>(entity, 0.1f);
-      mRegistry.assign<component::Perceivable>(entity, component::Perceivable::Kind::SHIP);
-      mRegistry.assign<component::Sensing>(entity);
+    registry_.assign<component::Named>(entity, name);
+    registry_.assign<component::Owner>(entity);
+    registry_.assign<component::ShipController>(entity);
+    registry_.assign<component::Health>(entity, 100.0f);
+    // todo create fuel fixture
+    registry_.assign<component::Fuel>(entity);
+    registry_.assign<component::Booster>(entity);
+    registry_.assign<component::Shielded>(entity);
+    registry_.assign<component::SideBooster>(entity);
+    registry_.assign<component::DealsDamage>(entity, 0.1f);
+    registry_.assign<component::Perceivable>(entity, component::Perceivable::Kind::SHIP);
+    registry_.assign<component::Sensing>(entity);
 
-      b2BodyDef bodyDef;
-      bodyDef.type = b2_dynamicBody;
-      bodyDef.position.Set(spawnPosition.x, spawnPosition.y);
-      bodyDef.allowSleep = true;
-      bodyDef.awake = true;
-      auto *id = new entt::entity(entity);
-      bodyDef.userData = reinterpret_cast<void *>(id);
-      b2Body *body = mWorld.CreateBody(&bodyDef);
+    b2BodyDef bodyDef;
+    bodyDef.type = b2_dynamicBody;
+    bodyDef.position.Set(spawnPosition.x, spawnPosition.y);
+    bodyDef.allowSleep = true;
+    bodyDef.awake = true;
+    auto *id = new entt::entity(entity);
+    bodyDef.userData = reinterpret_cast<void *>(id);
+    b2Body *body = world_.CreateBody(&bodyDef);
 
-      // todo add shield sensor fixture
-      b2CircleShape sensorShape;
-      sensorShape.m_radius = PERCEPTION_RADIUS;
+    // todo add shield sensor fixture
+    b2CircleShape sensorShape;
+    sensorShape.m_radius = PERCEPTION_RADIUS;
 
-      b2FixtureDef sensorFixtureDef;
-      sensorFixtureDef.isSensor = true;
-      sensorFixtureDef.userData = reinterpret_cast<void *>(id);
-      sensorFixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
-      sensorFixtureDef.filter.categoryBits = CollisionMask::SENSOR;
+    b2FixtureDef sensorFixtureDef;
+    sensorFixtureDef.isSensor = true;
+    sensorFixtureDef.userData = reinterpret_cast<void *>(id);
+    sensorFixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
+    sensorFixtureDef.filter.categoryBits = CollisionMask::SENSOR;
 
-      b2Vec2 vertices[3];
-      vertices[0].Set(0.0f, 5.0f - 5.0f / 3.0f);
-      vertices[1].Set(-2.0f, -5.0f / 3.0f);
-      vertices[2].Set(2.0f, -5.0f / 3.0f);
+    b2Vec2 vertices[3];
+    vertices[0].Set(0.0f, 5.0f - 5.0f / 3.0f);
+    vertices[1].Set(-2.0f, -5.0f / 3.0f);
+    vertices[2].Set(2.0f, -5.0f / 3.0f);
 
-      int32_t count = 3;
-      b2PolygonShape polygonShape;
-      polygonShape.Set(vertices, count);
+    int32_t count = 3;
+    b2PolygonShape polygonShape;
+    polygonShape.Set(vertices, count);
 
-      b2FixtureDef fixtureDef;
-      fixtureDef.userData = reinterpret_cast<void *>(id);
-      fixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER | CollisionMask::SENSOR;
-      fixtureDef.filter.categoryBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
-      fixtureDef.shape = &polygonShape;
-      fixtureDef.density = SHIP_DENSITY;
-      fixtureDef.restitution = 0.8f;  // todo tune restitution
-      mRegistry.assign<component::PhysicsBody>(entity, body);
-    }
-  });
+    b2FixtureDef fixtureDef;
+    fixtureDef.userData = reinterpret_cast<void *>(id);
+    fixtureDef.filter.maskBits = CollisionMask::HEALTH | CollisionMask::DAMAGER | CollisionMask::SENSOR;
+    fixtureDef.filter.categoryBits = CollisionMask::HEALTH | CollisionMask::DAMAGER;
+    fixtureDef.shape = &polygonShape;
+    fixtureDef.density = SHIP_DENSITY;
+    fixtureDef.restitution = 0.8f;  // todo tune restitution
+    registry_.assign<component::PhysicsBody>(entity, body);
+  }
+}
+void NetworkingSystem::listen() { do_accept(); }
+void NetworkingSystem::do_accept() {
+  BOOST_LOG_TRIVIAL(debug) << "do_accept" << std::endl;
+  acceptor_.async_accept(asio::make_strand(ioc_),
+                         beast::bind_front_handler(&NetworkingSystem::on_accept, shared_from_this()));
+}
+void NetworkingSystem::on_accept(beast::error_code ec, tcp::socket socket) {
+  BOOST_LOG_TRIVIAL(debug) << "on_accept" << std::endl;
+  if (ec) {
+    fail(ec, "accept");
+  } else {
+    auto session = net::WebsocketSession::create(std::move(socket), ctx_);
+    session->run();
+    registry_.assign<component::SessionComponent>(registry_.create(), session);
+  }
+  do_accept();
 }
 
-template class NetworkingSystem<true>;
-
-template class NetworkingSystem<false>;
 }  // namespace spac::server::system

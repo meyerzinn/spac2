@@ -1,57 +1,38 @@
 #pragma once
 
-#include <TaskQueue.h>
-#include <box2d/box2d.h>
-#include <uwebsockets/App.h>
-#include <uwebsockets/Loop.h>
-#include <uwebsockets/LoopData.h>
-#include <atomic>
-#include <boost/lockfree/queue.hpp>
-#include <chrono>
-#include <entt/entt.hpp>
-#include <set>
-#include <unordered_set>
-#include "CollisionFlags.h"
-#include "Constants.h"
-#include "EntityComponents.h"
-#include "NetworkingComponents.h"
-#include "PhysicsComponents.h"
-#include "ShipComponents.h"
+#include <box2d/b2_world.h>
+#include "Session.h"
 #include "System.h"
 #include "packet_generated.h"
 
 using namespace std::chrono;
 
 namespace spac::server::system {
-template <bool SSL>
-class NetworkingSystem : public spac::System {
+
+class NetworkingSystem : public spac::System, public std::enable_shared_from_this<NetworkingSystem> {
  public:
-  NetworkingSystem(entt::registry &registry, b2World &world, uWS::Loop *loop);
+  template <typename... T>
+  static std::shared_ptr<NetworkingSystem> create(T &&... t) {
+    return std::shared_ptr<NetworkingSystem>(new NetworkingSystem(std::forward<T>(t)...));
+  }
 
   void update() override;
-
-  void listen(int port, uWS::TemplatedApp<SSL> app);
+  void listen();
 
  private:
-  using WebSocket = uWS::WebSocket<SSL, true>;
-  entt::observer mDeathObserver;
-  TaskQueue mTaskQueue = TaskQueue(1024);
-  b2World &mWorld;
-  uWS::Loop *mLoop;
+  NetworkingSystem(entt::registry &registry, b2World &world, asio::io_context &ioc, ssl::context &ctx,
+                   tcp::endpoint endpoint);
 
-  void onMessage(WebSocket *ws, std::string_view message, uWS::OpCode opCode);
-  void onOpen(WebSocket *ws, uWS::HttpRequest *req);
-  void onDrain(WebSocket *ws);
-  void onPing(WebSocket *ws);
-  void onPong(WebSocket *ws);
-  void onClose(WebSocket *ws, int code, std::string_view message);
+  entt::observer deathObserver_;
+  b2World &world_;
+  asio::io_context &ioc_;
+  ssl::context &ctx_;
+  tcp::acceptor acceptor_;
 
-  void handleRespawn(entt::entity entity, const net::Packet *packet);
-  void handleInputs();
+  void do_accept();
+  void on_accept(beast::error_code ec, tcp::socket socket);
 
-  struct SocketData {
-    entt::entity id = entt::null;
-    std::shared_ptr<std::atomic<bool>> closed;
-  };
+  void handleRespawn(entt::entity entity, const ::spac::net::Packet *packet);
+  //  void handleInputs();
 };
 }  // namespace spac::server::system

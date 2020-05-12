@@ -9,7 +9,7 @@ namespace spac::server::system {
 constexpr float FUEL_DENSITY = 1141.0;
 
 void RefuelSystem::update() {
-  auto entities = mRegistry.view<component::Fuel>();
+  auto entities = registry_.view<component::Fuel>();
   for (auto entity : entities) {
     auto &fuel = entities.get<component::Fuel>(entity);
     fuel.stored = std::clamp(fuel.stored + fuel.regenerate, 0.f, fuel.capacity);

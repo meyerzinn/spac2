@@ -10,8 +10,4 @@ struct PhysicsBody {
   b2Body *body;
 };
 
-struct Sensing {
-  boost::container::flat_set<entt::entity> entities;
-};
-
 }  // namespace spac::server::component

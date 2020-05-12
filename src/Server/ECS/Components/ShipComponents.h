@@ -1,6 +1,7 @@
 #pragma once
 
 #include <box2d/b2_fixture.h>
+#include <chrono>
 #include <string>
 
 namespace spac::server::component {
