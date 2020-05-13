@@ -32,6 +32,7 @@ class NetworkingSystem : public spac::System, public std::enable_shared_from_thi
   void do_accept();
   void on_accept(beast::error_code ec, tcp::socket socket);
 
+  void handlePacket(entt::entity entity, const ::spac::net::Packet *packet);
   void handleRespawn(entt::entity entity, const ::spac::net::Packet *packet);
   //  void handleInputs();
 };

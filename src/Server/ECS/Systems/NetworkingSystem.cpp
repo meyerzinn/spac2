@@ -64,14 +64,36 @@ void NetworkingSystem::update() {
   auto now = high_resolution_clock::now();
 
   auto clients = registry_.view<component::SessionComponent>();
-  std::string buffer = "";
+  std::string buffer;
   for (entt::entity client : clients) {
-    if (!clients.get(client).conn->read(buffer)) {
-      BOOST_LOG_TRIVIAL(debug) << "Received message from client (" << std::to_string(static_cast<unsigned int>(client))
+    auto conn = clients.get(client).conn;
+    // We only pull one message off the buffer because we want to make sure every player input gets executed
+    // for at least one tick, so things like firing are correctly handled.
+    // This should not cause the buffer to pile up since the networking system is run many times per tick.
+    if (conn->read(buffer)) {
+      BOOST_LOG_TRIVIAL(debug) << "Received message from client (" << static_cast<unsigned int>(client)
                                << "): " << buffer << std::endl;
+      auto buff_ptr = reinterpret_cast<const uint8_t *>(buffer.c_str());
+      auto verifier = flatbuffers::Verifier(buff_ptr, buffer.length());
+      bool ok = ::spac::net::VerifyPacketBuffer(verifier);
+      if (!ok) {
+        BOOST_LOG_TRIVIAL(debug) << "Received malformed packet." << std::endl;
+        continue;
+      }
+      auto packet = ::spac::net::GetPacket(buff_ptr);
+      handlePacket(client, packet);
+      // handle the buffer message
+    }
+
+    if (conn->error()) {
+      // network connection is in error state, tag the client for destruction
+      auto err = conn->close();
+      BOOST_LOG_TRIVIAL(debug) << "Closing connection to client due to error: " << err.message() << std::endl;
+      registry_.assign<component::TaggedToDestroy>(client);
     }
   }
 
+  // todo: might need a "dead" component to simplify things
   // Send death messages
   for (auto client : deathObserver_) {
     auto &net = registry_.get<component::SessionComponent>(client);
@@ -121,6 +143,7 @@ void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Pac
     b2Body *body = world_.CreateBody(&bodyDef);
 
     // todo add shield sensor fixture
+
     b2CircleShape sensorShape;
     sensorShape.m_radius = PERCEPTION_RADIUS;
 
@@ -149,7 +172,9 @@ void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Pac
     registry_.assign<component::PhysicsBody>(entity, body);
   }
 }
+
 void NetworkingSystem::listen() { do_accept(); }
+
 void NetworkingSystem::do_accept() {
   BOOST_LOG_TRIVIAL(debug) << "do_accept" << std::endl;
   acceptor_.async_accept(asio::make_strand(ioc_),
@@ -166,5 +191,7 @@ void NetworkingSystem::on_accept(beast::error_code ec, tcp::socket socket) {
   }
   do_accept();
 }
+
+void NetworkingSystem::handlePacket(entt::entity entity, const ::spac::net::Packet *packet) {}
 
 }  // namespace spac::server::system

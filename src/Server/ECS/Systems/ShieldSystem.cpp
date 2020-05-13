@@ -7,7 +7,7 @@
 
 namespace spac::server::system {
 
-constexpr float SHIELD_RADIUS = 3.0f;
+//constexpr float SHIELD_RADIUS = 3.0f;
 
 void ShieldSystem::update() {
   auto entities =
@@ -15,7 +15,6 @@ void ShieldSystem::update() {
   for (auto entity : entities) {
     auto &shielded = entities.get<component::Shielded>(entity);
     auto controller = entities.get<component::ShipController>(entity);
-    auto physics = entities.get<component::PhysicsBody>(entity);
     auto fuelRequired = shielded.burnRate * FIXED_SIMULATION_DURATION;
     auto &fuel = entities.get<component::Fuel>(entity);
     if (fuel.stored < fuelRequired) {

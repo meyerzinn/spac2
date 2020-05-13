@@ -32,17 +32,19 @@ class Connection : public std::enable_shared_from_this<Derived> {
     return error_;
   }
 
-  beast::error_code read(std::string& buffer) {
-    if (error_) return error_;
+  bool read(std::string& buffer) {
+    if (error_) return false;
     if (!readQueue_.empty()) {
       auto top = readQueue_.front();
       readQueue_.pop_front();
-      BOOST_LOG_TRIVIAL(debug) << top << std::endl;
       buffer.assign(top);
-      return beast::error_code(ReadErrc::Success);
+      return true;
     }
-    return beast::error_code(ReadErrc::Empty);
+    return false;
   }
+
+  /// returns the current error state of the connection, or an empty error if there is none.
+  beast::error_code error() { return error_; }
 
   beast::error_code close() {
     // set the error here to guard against further write operations
@@ -90,38 +92,4 @@ class Connection : public std::enable_shared_from_this<Derived> {
   void on_close(beast::error_code ec) { boost::ignore_unused(ec); }
 };
 
-enum class ReadErrc : int { Success = 0, Empty = 1 };
-
 }  // namespace spac::net
-
-namespace boost::system {
-template <>
-struct is_error_code_enum<spac::net::ReadErrc> : public std::true_type {};
-}  // namespace boost::system
-
-namespace spac::net {
-class ReadErrc_category : public boost::system::error_category {
- public:
-  // Return a short descriptive name for the category
-  virtual const char* name() const noexcept final { return "spac::net::ReadError"; }
-  // Return what each enum means in text
-  virtual std::string message(int c) const override final {
-    switch (static_cast<spac::net::ReadErrc>(c)) {
-      case spac::net::ReadErrc::Success:
-        return "read successful";
-      case spac::net::ReadErrc::Empty:
-        return "read queue exhausted";
-      default:
-        return "unknown";
-    }
-  }
-};
-inline boost::system::error_code make_error_code(const ReadErrc e) {
-  return boost::system::error_code(static_cast<int>(e), ReadErrc_category());
-}
-inline boost::system::error_condition make_error_condition(const ReadErrc e) {
-  return boost::system::error_condition(static_cast<int>(e), ReadErrc_category());
-}
-}  // namespace spac::net
-
-// namespace detail
