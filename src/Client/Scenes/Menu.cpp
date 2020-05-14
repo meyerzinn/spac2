@@ -1,5 +1,7 @@
 #include "Menu.h"
 #include <string>
+#include "Game.h"
+#include "SceneManager.h"
 
 namespace spac::client::scene {
 
@@ -21,6 +23,10 @@ Menu::~Menu() {
 void Menu::update() {}
 
 void Menu::render() {
+  if (IsKeyDown(KEY_ENTER)) {
+    SceneManager::getInstance()->ChangeScene();
+  }
+
   mFrame++;
 
   BeginDrawing();

@@ -41,7 +41,7 @@ void WebsocketSession::on_accept(beast::error_code ec) {
   if (ec) return fail(*this, ec, "accept");
 
   // Start the read cycle (subsequent reads are handled by the Connection abstract class)
-  ws_.async_read(readBuffer_, beast::bind_front_handler(&WebsocketSession::on_read, shared_from_this()));
+  do_read();
 }
 
 void WebsocketSession::run() {

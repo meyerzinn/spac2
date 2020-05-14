@@ -56,7 +56,7 @@ class Connection : public std::enable_shared_from_this<Derived> {
 
   static void fail(Connection& conn, beast::error_code ec, char const* what) {
     if (!conn.error_) conn.error_ = ec;
-    BOOST_LOG_TRIVIAL(debug) << what << ":" << ec.message() << std::endl;
+    BOOST_LOG_TRIVIAL(error) << what << ": " << ec.message() << std::endl;
   }
 
  protected:
@@ -79,14 +79,17 @@ class Connection : public std::enable_shared_from_this<Derived> {
     }
   }
 
+  void do_read() {
+    ws_.async_read(readBuffer_, beast::bind_front_handler(&Connection::on_read, shared_from_this()));
+  }
+
   void on_read(beast::error_code ec, std::size_t bytes_transferred) {
     boost::ignore_unused(bytes_transferred);
 
     if (ec) fail(*this, ec, "read");
     readQueue_.push_back(beast::buffers_to_string(readBuffer_.cdata()));
     readBuffer_.clear();
-    if (!error_)
-      ws_.async_read(readBuffer_, beast::bind_front_handler(&Connection<Derived>::on_read, shared_from_this()));
+    if (!error_) do_read();
   }
 
   void on_close(beast::error_code ec) { boost::ignore_unused(ec); }

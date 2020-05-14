@@ -4,21 +4,24 @@
 #include "Connection.h"
 
 namespace spac::client::net {
-class Client : public spac::net::Connection {
+class WebsocketClient : public spac::net::Connection<WebsocketClient> {
  public:
   template <typename... T>
-  static std::shared_ptr<Client> create(T &&... t) {
-    return std::shared_ptr<Client>(new Client(std::forward<T>(t)...));
+  static std::shared_ptr<WebsocketClient> create(T &&... t) {
+    return std::shared_ptr<WebsocketClient>(new WebsocketClient(std::forward<T>(t)...));
   }
-  void run(std::string host, std::string port);
+  void connect(std::string host, std::string port);
 
  private:
-  Client(asio::io_context &ioc, ssl::context &ctx);
-
+  std::string host_;
+  std::string port_;
   tcp::resolver resolver_;
-  std::string host_, port_;
+
+  WebsocketClient(asio::io_context &ioc, ssl::context &ctx);
+
   void on_resolve(beast::error_code ec, tcp::resolver::results_type results);
   void on_connect(beast::error_code ec, const tcp::resolver::results_type::endpoint_type &);
+  void on_ssl_handshake(beast::error_code ec);
   void on_handshake(beast::error_code ec);
 };
 // public:

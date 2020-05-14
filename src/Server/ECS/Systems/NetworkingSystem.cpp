@@ -82,7 +82,6 @@ void NetworkingSystem::update() {
       }
       auto packet = ::spac::net::GetPacket(buff_ptr);
       handlePacket(client, packet);
-      // handle the buffer message
     }
 
     if (conn->error()) {
@@ -113,8 +112,37 @@ void NetworkingSystem::update() {
   deathObserver_.clear();
 }
 
-void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Packet *packet) {
-  auto name = packet->message_as_Respawn()->name()->str();
+void NetworkingSystem::listen() { do_accept(); }
+
+void NetworkingSystem::do_accept() {
+  BOOST_LOG_TRIVIAL(debug) << "do_accept" << std::endl;
+  acceptor_.async_accept(asio::make_strand(ioc_),
+                         beast::bind_front_handler(&NetworkingSystem::on_accept, shared_from_this()));
+}
+void NetworkingSystem::on_accept(beast::error_code ec, tcp::socket socket) {
+  BOOST_LOG_TRIVIAL(debug) << "on_accept" << std::endl;
+  if (ec) {
+    fail(ec, "accept");
+  } else {
+    auto session = net::WebsocketSession::create(std::move(socket), ctx_);
+    session->run();
+    registry_.assign<component::SessionComponent>(registry_.create(), session);
+  }
+  do_accept();
+}
+
+void NetworkingSystem::handlePacket(entt::entity entity, const ::spac::net::Packet *packet) {
+  switch (packet->message_type()) {
+    case ::spac::net::Message_Respawn:
+      return handleRespawn(entity, packet->message_as_Respawn());
+    default:
+      BOOST_LOG_TRIVIAL(debug) << "Received unknown packet from client." << std::endl;
+      return;
+  }
+}
+
+void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Respawn *respawn) {
+  auto name = respawn->name()->str();
   if (!registry_.has<component::Named>(entity)) {
     // spawn player
     // todo choose spawn position more intelligently
@@ -172,26 +200,5 @@ void NetworkingSystem::handleRespawn(entt::entity entity, const ::spac::net::Pac
     registry_.assign<component::PhysicsBody>(entity, body);
   }
 }
-
-void NetworkingSystem::listen() { do_accept(); }
-
-void NetworkingSystem::do_accept() {
-  BOOST_LOG_TRIVIAL(debug) << "do_accept" << std::endl;
-  acceptor_.async_accept(asio::make_strand(ioc_),
-                         beast::bind_front_handler(&NetworkingSystem::on_accept, shared_from_this()));
-}
-void NetworkingSystem::on_accept(beast::error_code ec, tcp::socket socket) {
-  BOOST_LOG_TRIVIAL(debug) << "on_accept" << std::endl;
-  if (ec) {
-    fail(ec, "accept");
-  } else {
-    auto session = net::WebsocketSession::create(std::move(socket), ctx_);
-    session->run();
-    registry_.assign<component::SessionComponent>(registry_.create(), session);
-  }
-  do_accept();
-}
-
-void NetworkingSystem::handlePacket(entt::entity entity, const ::spac::net::Packet *packet) {}
 
 }  // namespace spac::server::system
