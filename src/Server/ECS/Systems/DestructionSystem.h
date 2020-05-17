@@ -1,9 +1,7 @@
 #pragma once
 
-#include <box2d/box2d.h>
-#include "System.h"
-#include "EntityComponents.h"
-#include "PhysicsComponents.h"
+#include <box2d/b2_world.h>
+#include <System.h>
 
 namespace spac::server::system {
 class DestructionSystem : public spac::System {

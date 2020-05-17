@@ -1,10 +1,10 @@
 #include "CollisionsSystem.h"
-#include "CollisionFlags.h"
-#include "Constants.h"
-#include "EntityComponents.h"
-#include "PhysicsComponents.h"
 
-#include <PerceptionComponents.h>
+#include <ECS/Components/EntityComponents.h>
+#include <ECS/Components/PerceptionComponents.h>
+#include <ECS/Components/PhysicsComponents.h>
+#include <Utilities/CollisionFlags.h>
+#include <Utilities/Constants.h>
 
 constexpr int32_t velocityIterations = 8;
 constexpr int32_t positionIterations = 3;

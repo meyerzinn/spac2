@@ -2,13 +2,11 @@
 
 #include <memory>
 #include "Scene.h"
+
 namespace spac::client {
 class SceneManager {
  public:
-  void ChangeScene(Scene* next) {
-    delete mCurrentScene;  // free memory associated with the scene
-    mCurrentScene = next;
-  };
+  void ChangeScene(std::unique_ptr<Scene> next) { mCurrentScene = std::move(next); };
 
   static SceneManager* getInstance() {
     if (!instance) {
@@ -29,7 +27,7 @@ class SceneManager {
 
  private:
   inline static SceneManager* instance;
-  SceneManager() : mCurrentScene(nullptr){};
-  Scene* mCurrentScene;
+  SceneManager() = default;
+  std::unique_ptr<Scene> mCurrentScene;
 };
 }  // namespace spac::client

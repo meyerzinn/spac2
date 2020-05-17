@@ -1,17 +1,18 @@
 #include "PerceptionSystem.h"
-#include <CollisionFlags.h>
+
+#include <ECS/Components/EntityComponents.h>
+#include <ECS/Components/PerceptionComponents.h>
+#include <ECS/Components/PhysicsComponents.h>
+#include <ECS/Components/Session.h>
+#include <ECS/Components/ShipComponents.h>
+#include <packet_generated.h>
+#include <Utilities/CollisionFlags.h>
+#include <Utilities/Constants.h>
 #include <flatbuffers/flatbuffers.h>
 #include <boost/log/trivial.hpp>
 #include <chrono>
 #include <unordered_set>
 #include <vector>
-#include "Constants.h"
-#include "EntityComponents.h"
-#include "PerceptionComponents.h"
-#include "PhysicsComponents.h"
-#include "Session.h"
-#include "ShipComponents.h"
-#include "packet_generated.h"
 
 using namespace std::chrono;
 

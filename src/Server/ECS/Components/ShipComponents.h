@@ -2,6 +2,7 @@
 
 #include <box2d/b2_fixture.h>
 #include <chrono>
+#include <entt/entt.hpp>
 #include <string>
 
 namespace spac::server::component {

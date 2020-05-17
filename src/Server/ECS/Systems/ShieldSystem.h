@@ -1,8 +1,7 @@
 #pragma once
 
-#include "PhysicsComponents.h"
-#include "ShipComponents.h"
-#include "System.h"
+#include <ECS/Components/ShipComponents.h>
+#include <System.h>
 
 namespace spac::server::system {
 class ShieldSystem : public spac::System {

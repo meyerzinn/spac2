@@ -1,6 +1,7 @@
 #include "LifetimeSystem.h"
-#include <Constants.h>
-#include <EntityComponents.h>
+
+#include <ECS/Components/EntityComponents.h>
+#include <Utilities/Constants.h>
 
 namespace spac::server::system {
 void LifetimeSystem::update() {

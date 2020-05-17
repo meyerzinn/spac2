@@ -10,6 +10,7 @@ WebsocketClient::WebsocketClient(asio::io_context &ioc, ssl::context &ctx)
       Connection(websocket::stream<beast::ssl_stream<beast::tcp_stream>>(asio::make_strand(ioc), ctx)) {}
 
 void WebsocketClient::connect(std::string host, std::string port) {
+  connected_ = true;
   host_ = std::move(host);
   port_ = std::move(port);
   resolver_.async_resolve(host_, port_, beast::bind_front_handler(&WebsocketClient::on_resolve, shared_from_this()));
@@ -66,43 +67,9 @@ void WebsocketClient::on_handshake(beast::error_code ec) {
   BOOST_LOG_TRIVIAL(debug) << "websocket handshake complete" << std::endl
                            << "websocket connection established" << std::endl;
 
-  // Websocket connection is open! We can start sending/receiving data.
-
   do_read();
 }
 
-// beast::error_code WebsocketClient::write(std::string_view buffer) {
-//  writeQueue_.push_back(buffer);
-//  if (writeQueue_.size() <= 1)
-//    ws_.async_write(asio::buffer(writeQueue_.front()),
-//                    beast::bind_front_handler(&WebsocketClient::on_write, shared_from_this()));
-//  return error_;
-//}
-//
-// void WebsocketClient::on_write(beast::error_code ec, std::size_t bytes_transferred) {
-//  boost::ignore_unused(bytes_transferred);
-//  writeQueue_.erase(writeQueue_.begin());
-//  if (ec) return fail(ec, "write");
-//  if (!writeQueue_.empty()) {
-//    ws_.async_write(asio::buffer(writeQueue_.front()),
-//                    beast::bind_front_handler(&WebsocketClient::on_write, shared_from_this()));
-//  }
-//}
-//
-// beast::error_code WebsocketClient::read(std::string &buffer) {
-//  if (!readQueue_.empty()) {
-//    auto top = readQueue_.front();
-//    readQueue_.pop_front();
-//    buffer.assign(top);
-//  }
-//  return error_;
-//}
-//
-// void WebsocketClient::on_read(beast::error_code ec, std::size_t bytes_transferred) {
-//  if (ec) fail(ec, "read");
-//  boost::ignore_unused(bytes_transferred);
-//  readQueue_.emplace_back(asio::buffer_cast<const char *>(readBuffer_.data()));
-//  ws_.async_read(readBuffer_, beast::bind_front_handler(&WebsocketClient::on_read, shared_from_this()));
-//}
+bool WebsocketClient::connected() { return connected_ && !error_; }
 
 }  // namespace spac::client::net

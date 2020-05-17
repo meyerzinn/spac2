@@ -1,20 +1,19 @@
 #pragma once
 
+#include <ECS/Systems/Starfield.h>
 #include <raylib.h>
 #include "Scene.h"
-#include "Starfield.h"
 
 namespace spac::client::scene {
 class Menu : public Scene {
  public:
   Menu();
-  ~Menu() override;
   void update() override;
   void render() override;
 
  private:
-  Camera2D* mCamera = new Camera2D();
-  system::Starfield* mStars;
+  std::shared_ptr<Camera2D> mCamera = std::make_shared<Camera2D>();
+  std::unique_ptr<system::Starfield> mStars;
   uint8_t mFrame = 0;
 };
 }  // namespace spac::client::scene

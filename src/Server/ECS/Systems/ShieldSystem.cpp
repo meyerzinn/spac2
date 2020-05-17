@@ -1,13 +1,14 @@
 #include "ShieldSystem.h"
-#include "Constants.h"
-#include "EntityComponents.h"
-#include "PerceptionComponents.h"
-#include "PhysicsComponents.h"
-#include "ShipComponents.h"
+
+#include <ECS/Components/EntityComponents.h>
+#include <ECS/Components/PerceptionComponents.h>
+#include <ECS/Components/PhysicsComponents.h>
+#include <ECS/Components/ShipComponents.h>
+#include <Utilities/Constants.h>
 
 namespace spac::server::system {
 
-//constexpr float SHIELD_RADIUS = 3.0f;
+// constexpr float SHIELD_RADIUS = 3.0f;
 
 void ShieldSystem::update() {
   auto entities =

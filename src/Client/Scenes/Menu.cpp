@@ -1,30 +1,25 @@
 #include "Menu.h"
 #include <string>
+#include "Connecting.h"
 #include "Game.h"
 #include "SceneManager.h"
 
 namespace spac::client::scene {
 
 Menu::Menu() {
-  mCamera = new Camera2D();
   mCamera->target = {0, 0};
   mCamera->offset = {0, 0};
   mCamera->zoom = 0;
   mCamera->rotation = 0;
   entt::registry mRegistry;
-  mStars = new system::Starfield(mRegistry, mCamera);
-}
-
-Menu::~Menu() {
-  delete mStars;
-  delete mCamera;
+  mStars = std::make_shared<system::Starfield>(mRegistry, mCamera);
 }
 
 void Menu::update() {}
 
 void Menu::render() {
   if (IsKeyDown(KEY_ENTER)) {
-    SceneManager::getInstance()->ChangeScene();
+    SceneManager::getInstance()->ChangeScene(std::make_shared<Connecting>());
   }
 
   mFrame++;

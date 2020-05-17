@@ -3,13 +3,12 @@
 #include <boost/container/flat_set.hpp>
 #include <chrono>
 #include <entt/entt.hpp>
-#include "WebsocketSession.h"
+#include <Networking/WebsocketSession.h>
 
 namespace spac::server::component {
 
-
 struct SessionComponent {
-  explicit SessionComponent(std::shared_ptr<spac::server::net::WebsocketSession> session);
+  explicit SessionComponent(std::shared_ptr<spac::server::net::WebsocketSession> session) : conn(std::move(session)) {}
 
   std::shared_ptr<spac::server::net::WebsocketSession> conn;
   boost::container::flat_set<entt::entity> known;

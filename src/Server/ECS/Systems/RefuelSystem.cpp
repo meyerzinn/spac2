@@ -1,7 +1,7 @@
 #include "RefuelSystem.h"
 
-#include <Constants.h>
-#include <ShipComponents.h>
+#include <Utilities/Constants.h>
+#include <ECS/Components/ShipComponents.h>
 
 namespace spac::server::system {
 

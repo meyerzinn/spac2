@@ -1,11 +1,12 @@
 #include "NetworkingSystem.h"
-#include <box2d/box2d.h>
+
+#include <ECS/Components/EntityComponents.h>
+#include <ECS/Components/PerceptionComponents.h>
+#include <ECS/Components/PhysicsComponents.h>
+#include <ECS/Components/Session.h>
+#include <ECS/Components/ShipComponents.h>
+#include <Utilities/CollisionFlags.h>
 #include <boost/log/trivial.hpp>
-#include "CollisionFlags.h"
-#include "EntityComponents.h"
-#include "PerceptionComponents.h"
-#include "PhysicsComponents.h"
-#include "ShipComponents.h"
 
 namespace spac::server::system {
 

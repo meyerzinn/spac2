@@ -1,7 +1,8 @@
 #include "BoosterSystem.h"
-#include <Constants.h>
-#include <PhysicsComponents.h>
-#include <ShipComponents.h>
+
+#include <ECS/Components/PhysicsComponents.h>
+#include <ECS/Components/ShipComponents.h>
+#include <Utilities/Constants.h>
 
 namespace spac::server::system {
 void BoosterSystem::update() {

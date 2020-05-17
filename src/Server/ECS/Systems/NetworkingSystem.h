@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Connection.h>
+#include <System.h>
 #include <box2d/b2_world.h>
-#include "Session.h"
-#include "System.h"
-#include "packet_generated.h"
+#include <packet_generated.h>
 
 using namespace std::chrono;
 

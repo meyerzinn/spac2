@@ -1,5 +1,8 @@
 #include "DestructionSystem.h"
 
+#include <ECS/Components/EntityComponents.h>
+#include <ECS/Components/PhysicsComponents.h>
+
 namespace spac::server::system {
 void DestructionSystem::update() {
   // tag all sub-entities

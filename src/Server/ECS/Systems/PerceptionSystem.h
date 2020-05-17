@@ -1,7 +1,7 @@
 #pragma once
 
 #include <chrono>
-#include "System.h"
+#include <System.h>
 
 namespace spac::server::system {
 class PerceptionSystem : public spac::System {

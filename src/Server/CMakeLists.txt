@@ -1,7 +1,25 @@
-add_executable(server main.cpp)
-target_include_directories(server PRIVATE ${CMAKE_CURRENT_LIST_DIR}/Utilities)
+project(server)
 
-add_subdirectory(ECS)
+add_executable(${PROJECT_NAME} main.cpp)
+add_executable(spac::server ALIAS ${PROJECT_NAME})
+
+target_include_directories(server PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_sources(server PRIVATE
+    ${PROJECT_SOURCE_DIR}/main.cpp
+    ${PROJECT_SOURCE_DIR}/Networking/WebsocketSession.cpp
+
+
+    # TODO: Move these all into the headers
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/BoosterSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/CollisionsSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/DestructionSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/LifetimeSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/NetworkingSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/PerceptionSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/RefuelSystem.cpp
+    ${PROJECT_SOURCE_DIR}/ECS/Systems/ShieldSystem.cpp
+)
 
 find_package(EnTT CONFIG REQUIRED)
 find_package(unofficial-box2d CONFIG REQUIRED)
@@ -13,7 +31,8 @@ target_include_directories(server PRIVATE
         ${Boost_INCLUDE_DIR})
 
 target_link_libraries(server PRIVATE
-        common
+        spac::networking
+        spac::ecs
         ${CMAKE_THREAD_LIBS_INIT}
         EnTT::EnTT
         unofficial::box2d::box2d
